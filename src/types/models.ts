@@ -67,7 +67,6 @@ export interface Farm {
   city: string
   addr: string
   icon: FarmIconKey
-  href: string
 }
 
 export interface RelatedLink {

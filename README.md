@@ -30,7 +30,7 @@ npm run test        # Vitest
 | --- | --- |
 | `VITE_SITE_URL` | 網站正式網址。產生 `sitemap.xml`、canonical 與社群分享網址；未設定時只產生 `robots.txt` |
 | `VITE_API_BASE_URL` | 後端 API 根路徑。設定後 `src/api/modules/*` 改走 Axios；未設定時使用 `src/api/data/*` 內建資料 |
-| `VITE_LEGACY_SITE_URL` | 仍放在原站的內容（第 123 則公告圖片、農場介紹頁、會員專區）根網址，預設 `https://agama-bt.com.tw`。搬家時改這一個值即可 |
+| `VITE_LEGACY_SITE_URL` | 仍放在原站的內容（第 123 則公告圖片、會員專區）根網址，預設 `https://agama-bt.com.tw`。搬家時改這一個值即可 |
 | `VITE_DEMO_MEMBER` | 未接後端時是否開放**示範**登入／註冊。`npm run dev` 一律開放並顯示「示範模式」提示；正式環境預設關閉，會顯示「線上會員系統尚未開放」 |
 | `VITE_NOINDEX` | 設為 `true` 時整站不讓搜尋引擎收錄（robots.txt 全擋、頁面加 noindex、Netlify 加 `X-Robots-Tag`）。**未設定 `VITE_SITE_URL` 時也會自動不收錄**；Netlify 的預覽部署與分支部署由 `netlify.toml` 固定設為 `true` |
 
@@ -43,7 +43,7 @@ npm run test        # Vitest
 1. **環境變數**（Site configuration → Environment variables）：
    - `VITE_SITE_URL`：正式網址（例如 `https://www.example.com.tw`）。**只是給客戶看的預覽站就不要設**，會自動不讓搜尋引擎收錄。
    - `VITE_DEMO_MEMBER`：給客戶試用示範登入設 `true`，正式上線設 `false`。
-   - `VITE_LEGACY_SITE_URL`：舊站關閉前把公告圖片、農場介紹搬家後再設定。
+   - `VITE_LEGACY_SITE_URL`：舊站關閉前把公告圖片搬家後再設定。
 2. **意見反應表單（Netlify Forms）**：
    - 第一次部署前到 **Forms → Enable form detection** 開啟表單偵測，開啟後要**重新部署一次**才會偵測到 `contact` 表單。
    - 到 **Forms → Form notifications** 設定收件 Email。
@@ -113,7 +113,7 @@ tests/unit/       Vitest 單元測試
 - **會員系統**：登入／註冊需要後端 API；未接之前正式環境會顯示「尚未開放」。
 - **消息內容**：155 則中只有 12 則有附件或圖片，其餘只有標題，需要補內文或附件。
 - **下載檔案**：34 個申請書、表單與收費文件放在 Google 雲端硬碟「成大智研官網下載檔案」資料夾（`src/utils/drive.ts`），網站連結用檔案 ID 直接下載。更新檔案請在雲端硬碟對原檔「管理版本 → 上傳新版本」，ID 不變、網站不用改；刪掉重傳會換 ID，要改 `downloads.data.ts`／`fees.data.ts`。目前放在個人帳號，正式上線建議改放公司帳號（換帳號重新上傳會換 ID，需同步更新連結）。
-- **原站內容**：第 123 則公告圖片、農場介紹頁、會員專區仍在 `agama-bt.com.tw`，搬家後設定 `VITE_LEGACY_SITE_URL`。
+- **原站內容**：第 123 則公告圖片、會員專區仍在 `agama-bt.com.tw`，搬家後設定 `VITE_LEGACY_SITE_URL`。
 - **主視覺與底圖**：目前取自同一支影片的畫面，取得實拍照片後替換 `src/assets/images/` 內同名檔。
 - **產銷履歷申請須知**：設計稿標示為整理中，目前顯示空狀態。
 - **英文版**：只翻譯介面，消息、文件等內容為中文，英文介面瀏覽這些頁面時會顯示提示。

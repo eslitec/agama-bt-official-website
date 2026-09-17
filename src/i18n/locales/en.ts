@@ -186,7 +186,6 @@ const en: MessageSchema = {
     email: 'E-mail',
     address: 'Address',
     empty: 'No matching farms. Try another keyword.',
-    more: 'Farm profile',
   },
   link: {
     eyebrow: 'LINKS',

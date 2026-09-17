@@ -1,6 +1,5 @@
 /* 由設計稿《成大智研官網.dc.html》抽出之內建資料。接上後端後可移除。 */
 import type { Farm } from '@/types/models'
-import { legacyUrl } from '@/utils/legacy'
 
 export const farmsData: Farm[] = [
   {
@@ -12,7 +11,6 @@ export const farmsData: Farm[] = [
     city: '臺南市',
     addr: '十份里海浦 30 號',
     icon: 'clam',
-    href: legacyUrl('/ncku/info_detail.php?ID=58'),
   },
   {
     name: '花蓮縣富里鄉農會',
@@ -23,7 +21,6 @@ export const farmsData: Farm[] = [
     city: '花蓮縣',
     addr: '羅山村東湖 6 號',
     icon: 'rice',
-    href: legacyUrl('/ncku/info_detail.php?ID=57'),
   },
   {
     name: '高雄市那瑪夏區芒果產銷班第四班',
@@ -34,7 +31,6 @@ export const farmsData: Farm[] = [
     city: '高雄市',
     addr: '達卡努瓦里秀嶺巷 210 號',
     icon: 'mango',
-    href: legacyUrl('/ncku/info_detail.php?ID=56'),
   },
   {
     name: '迦南地農場',
@@ -45,7 +41,6 @@ export const farmsData: Farm[] = [
     city: '臺南市',
     addr: '新和庒 111-1 號',
     icon: 'sprout',
-    href: legacyUrl('/ncku/info_detail.php?ID=55'),
   },
   {
     name: '保證責任彰化縣埔鹽合作農場',
@@ -56,6 +51,5 @@ export const farmsData: Farm[] = [
     city: '彰化縣',
     addr: '永平村番金路 115-18 號',
     icon: 'wheat',
-    href: legacyUrl('/ncku/info_detail.php?ID=54'),
   },
 ]

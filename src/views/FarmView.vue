@@ -53,14 +53,6 @@ const filtered = computed(() => filterFarms(farms.value, query.value))
             .farm-card__row
               dt {{ t('farm.address') }}
               dd(lang="zh-Hant-TW") {{ f.city }}{{ f.addr }}
-          a.text-link.farm-card__more(
-            v-if="f.href"
-            :href="f.href"
-            target="_blank"
-            rel="noopener"
-          )
-            | {{ t('farm.more') }} ↗
-            span.visually-hidden {{ t('common.externalLink') }}
       EmptyState(v-else :message="t('farm.empty')")
 </template>
 
@@ -167,12 +159,6 @@ const filtered = computed(() => filterFarms(farms.value, query.value))
       min-height: 24px;
       color: $c-primary;
     }
-  }
-
-  &__more {
-    align-self: flex-start;
-    margin-top: auto;
-    font-size: 13px;
   }
 
   &__email {

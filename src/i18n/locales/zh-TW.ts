@@ -178,7 +178,6 @@ const zhTW = {
     email: 'E-mail',
     address: '地址',
     empty: '查無符合的農場，請調整關鍵字。',
-    more: '農場介紹',
   },
   link: {
     eyebrow: 'LINKS',
