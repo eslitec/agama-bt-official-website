@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  isAdminPassword,
+  isAdminUsername,
   isEmail,
-  isMemberAccount,
+  isHttpUrl,
   isNationalId,
   isPhone,
-  isStrongPassword,
   isTaxId,
 } from '@/utils/validators'
 
@@ -37,12 +38,19 @@ describe('validators', () => {
     expect(isPhone('12345')).toBe(false)
   })
 
-  it('密碼強度與帳號', () => {
-    expect(isStrongPassword('abc12345')).toBe(true)
-    expect(isStrongPassword('abcdefgh')).toBe(false)
-    expect(isStrongPassword('a1')).toBe(false)
-    expect(isMemberAccount('04595257')).toBe(true)
-    expect(isMemberAccount('name@example.com')).toBe(true)
-    expect(isMemberAccount('abc')).toBe(false)
+  it('管理者帳號、密碼與網址', () => {
+    expect(isAdminUsername('admin')).toBe(true)
+    expect(isAdminUsername('Ncku.Admin_01')).toBe(true)
+    expect(isAdminUsername('ab')).toBe(false)
+    expect(isAdminUsername('王小明')).toBe(false)
+    expect(isAdminUsername('a b c')).toBe(false)
+    expect(isAdminPassword('admin12345')).toBe(true)
+    expect(isAdminPassword('abc12345')).toBe(false)
+    expect(isAdminPassword('abcdefghijk')).toBe(false)
+    expect(isAdminPassword('12345678901')).toBe(false)
+    expect(isHttpUrl('https://example.com/a?b=1')).toBe(true)
+    expect(isHttpUrl('http://x')).toBe(true)
+    expect(isHttpUrl('ftp://example.com')).toBe(false)
+    expect(isHttpUrl('https://example.com/a b')).toBe(false)
   })
 })

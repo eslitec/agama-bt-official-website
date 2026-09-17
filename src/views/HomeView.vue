@@ -222,14 +222,14 @@ const bandBg = computed(() => ({
         )
         RouterLink.text-link(:to="{ name: 'download' }") {{ t('home.quickAll') }}
 
-  //- ── 會員＋聯絡 ─────────────────────────────
+  //- ── 申請驗證＋聯絡 ─────────────────────────
   section.home-bottom.l-section
     .home-bottom__grid.l-container(v-reveal.stagger)
-      .member-card
-        h2.member-card__title {{ t('home.memberTitle') }}
-        p.member-card__lead {{ t('home.memberLead') }}
-        RouterLink.btn.btn--primary.btn--block(:to="{ name: 'login' }") {{ t('home.memberLogin') }}
-        RouterLink.member-card__register(:to="{ name: 'register' }") {{ t('home.memberRegister') }}
+      .apply-card
+        h2.apply-card__title {{ t('home.applyTitle') }}
+        p.apply-card__lead {{ t('home.applyLead') }}
+        RouterLink.btn.btn--primary.btn--block(:to="{ name: 'how' }") {{ t('home.ctaHow') }}
+        RouterLink.apply-card__download(:to="{ name: 'download' }") {{ t('home.applyDownload') }}
       .contact-card
         span.contact-card__image(
           :style="{ backgroundImage: `url(${media.contact})` }"
@@ -720,7 +720,7 @@ const bandBg = computed(() => ({
   }
 }
 
-// ── 會員＋聯絡 ─────────────────────────────
+// ── 申請驗證＋聯絡 ─────────────────────────
 .home-bottom {
   padding-block: 60px;
 
@@ -729,7 +729,7 @@ const bandBg = computed(() => ({
   }
 }
 
-.member-card {
+.apply-card {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -749,7 +749,7 @@ const bandBg = computed(() => ({
     color: $c-text-2;
   }
 
-  &__register {
+  &__download {
     padding: 13px;
     border: 1px solid $c-primary;
     color: $c-primary;

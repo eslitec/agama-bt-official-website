@@ -2,11 +2,14 @@
  * Material Symbols Rounded（weight 400、FILL 1，與設計稿一致）SVG 圖示，只打包實際用到的圖示。
  * 新增圖示：從 @material-symbols/svg-400/rounded 匯入並加入 icons 物件。
  */
+import add from '@material-symbols/svg-400/rounded/add-fill.svg?raw'
 import agriculture from '@material-symbols/svg-400/rounded/agriculture-fill.svg?raw'
 import check from '@material-symbols/svg-400/rounded/check-fill.svg?raw'
 import close from '@material-symbols/svg-400/rounded/close-fill.svg?raw'
+import deleteIcon from '@material-symbols/svg-400/rounded/delete-fill.svg?raw'
 import description from '@material-symbols/svg-400/rounded/description-fill.svg?raw'
 import eco from '@material-symbols/svg-400/rounded/eco-fill.svg?raw'
+import edit from '@material-symbols/svg-400/rounded/edit-fill.svg?raw'
 import factCheck from '@material-symbols/svg-400/rounded/fact_check-fill.svg?raw'
 import factory from '@material-symbols/svg-400/rounded/factory-fill.svg?raw'
 import inventory2 from '@material-symbols/svg-400/rounded/inventory_2-fill.svg?raw'
@@ -22,11 +25,14 @@ const strip = (svg: string): string =>
   svg.replace(/\s(width|height)="\d+"/g, '').replace('<svg ', '<svg fill="currentColor" ')
 
 const raw = {
+  add,
   agriculture,
   check,
   close,
+  delete: deleteIcon,
   description,
   eco,
+  edit,
   fact_check: factCheck,
   factory,
   inventory_2: inventory2,

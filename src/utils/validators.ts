@@ -68,9 +68,17 @@ export const isPhone = (v: string): boolean => {
   return /^09\d{8}$/.test(d) || /^0[2-8]\d{7,8}$/.test(d)
 }
 
-/** 至少 8 碼，且同時包含英文字母與數字 */
-export const isStrongPassword = (v: string): boolean =>
-  v.length >= 8 && /[A-Za-z]/.test(v) && /\d/.test(v)
+/* ───────── 管理者後台（規則與 apps-script/admin-api.gs 一致） ───────── */
 
-/** 會員帳號：統一編號或電子郵件 */
-export const isMemberAccount = (v: string): boolean => isTaxId(v) || isEmail(v)
+export const ADMIN_PASSWORD_MIN = 10
+
+/** 管理者帳號：3–32 個英數字，可含 . _ -（不分大小寫，伺服器存成小寫） */
+export const isAdminUsername = (v: string): boolean =>
+  /^[a-z0-9._-]{3,32}$/.test(v.trim().toLowerCase())
+
+/** 管理者密碼：至少 10 個字元，且同時包含英文字母與數字 */
+export const isAdminPassword = (v: string): boolean =>
+  v.length >= ADMIN_PASSWORD_MIN && /[A-Za-z]/.test(v) && /\d/.test(v)
+
+/** http:// 或 https:// 開頭、不含空白的網址 */
+export const isHttpUrl = (v: string): boolean => /^https?:\/\/\S+$/.test(v.trim())

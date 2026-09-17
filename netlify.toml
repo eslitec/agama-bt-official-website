@@ -7,6 +7,8 @@
 [build.environment]
   # 專案需要 Node 20.19 以上
   NODE_VERSION = "22"
+  # 管理者後台 API（apps-script/admin-api.gs 部署的網頁應用程式）；換部署網址時改這裡
+  VITE_ADMIN_API_URL = "https://script.google.com/macros/s/AKfycbxRniu8Cn0mt28CYfADBLWZhB1rcnbN_3bRD2PQu1GTtjH6hzNNK0PzrOYwihGKkZUq/exec"
 
 # 預覽部署（PR）與分支部署一律不讓搜尋引擎收錄
 [context.deploy-preview.environment]

@@ -1,62 +1,123 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import InfoPanel from '@/components/common/InfoPanel.vue'
 import FormField from '@/components/common/FormField.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useFormErrors } from '@/composables/useFormErrors'
-import { memberApi } from '@/api'
-import { ApiError } from '@/api/http'
-import { isBlank, isMemberAccount } from '@/utils/validators'
+import { adminErrorMessage } from '@/composables/useAdmin'
+import { adminApi } from '@/api'
+import { AdminApiError } from '@/api/modules/admin'
+import { isAdminPassword, isAdminUsername, isBlank } from '@/utils/validators'
 import { media } from '@/utils/media'
+import { safeRedirect } from '@/utils/redirect'
 
 const { t, tm, rt } = useI18n()
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
-const form = reactive({ account: '', password: '', remember: false })
+/** 正式網址或開發模擬後台可用；正式環境未設定網址時停用表單 */
+const available = adminApi.isAdminAvailable()
+const mock = adminApi.isAdminMock()
+// 模擬後台的示範帳號（只在開發環境打包，與 src/api/admin-mock.ts 的 MOCK_ADMIN 相同）
+const demoAccount = import.meta.env.DEV ? { username: 'admin', password: 'admin12345' } : {}
+const expired = computed(() => route.query.expired === '1')
+const features = (): string[] => (tm('login.features') as unknown as string[]).map((v) => rt(v))
+
+/** login：一般登入；setup：尚無管理者時的初次設定 */
+const mode = ref<'login' | 'setup'>('login')
+const form = reactive({
+  setupCode: '',
+  username: '',
+  password: '',
+  passwordConfirm: '',
+  remember: false,
+})
 const showPw = ref(false)
 const submitting = ref(false)
 const formError = ref('')
 const formEl = ref<HTMLFormElement | null>(null)
-/** 忘記密碼、登入問題 → 意見反應表單並預選「會員與帳號」 */
-const memberHelp = { name: 'contact', query: { topic: 'member' } }
-const demo = memberApi.isDemoMember()
-const features = (): string[] => (tm('login.features') as unknown as string[]).map((v) => rt(v))
 
-const ids = { account: 'login-account', password: 'login-password' } as const
-const { errors, check, validate, aria } = useFormErrors({
-  account: () =>
-    isBlank(form.account)
-      ? t('validation.required', { field: t('login.account') })
-      : isMemberAccount(form.account)
-        ? null
-        : t('validation.account'),
+const ids = {
+  setupCode: 'login-setup-code',
+  username: 'login-username',
+  password: 'login-password',
+  passwordConfirm: 'login-password-confirm',
+} as const
+
+const required = (value: string, label: string): string | null =>
+  isBlank(value) ? t('validation.required', { field: label }) : null
+
+const loginRules = useFormErrors({
+  username: () => required(form.username, t('login.username')),
+  password: () => (form.password ? null : t('validation.required', { field: t('login.password') })),
+})
+
+const setupRules = useFormErrors({
+  setupCode: () => required(form.setupCode, t('login.setupCode')),
+  username: () =>
+    required(form.username, t('login.username')) ??
+    (isAdminUsername(form.username) ? null : t('validation.username')),
   password: () =>
-    isBlank(form.password) ? t('validation.required', { field: t('login.password') }) : null,
+    (form.password ? null : t('validation.required', { field: t('login.password') })) ??
+    (isAdminPassword(form.password) ? null : t('validation.password')),
+  passwordConfirm: () =>
+    form.passwordConfirm === form.password ? null : t('validation.passwordConfirm'),
+})
+
+// 目前模式的錯誤訊息（兩組規則的欄位不同）
+const errors = computed<Record<string, string>>(() =>
+  mode.value === 'setup' ? setupRules.errors : loginRules.errors,
+)
+const aria = (key: keyof typeof ids) =>
+  errors.value[key]
+    ? { 'aria-invalid': 'true' as const, 'aria-describedby': `${ids[key]}-error` }
+    : {}
+function recheck(key: keyof typeof ids): void {
+  if (!errors.value[key]) return
+  if (mode.value === 'setup') setupRules.check(key)
+  else if (key === 'username' || key === 'password') loginRules.check(key)
+}
+
+onMounted(async () => {
+  if (!available) return
+  try {
+    const { needsSetup } = await adminApi.setupStatus()
+    if (needsSetup) mode.value = 'setup'
+  } catch {
+    /* 讀不到狀態時維持登入表單，送出時再顯示錯誤 */
+  }
 })
 
 async function onSubmit(): Promise<void> {
-  if (submitting.value) return
+  if (submitting.value || !available) return
   formError.value = ''
-  if (!(await validate(formEl.value, (k) => ids[k]))) return
+  const rules = mode.value === 'setup' ? setupRules : loginRules
+  const ok = await rules.validate(formEl.value, (k) => ids[k as keyof typeof ids])
+  if (!ok) return
   submitting.value = true
   try {
-    await auth.login({ ...form })
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
-    await router.push(
-      redirect?.startsWith('/') && !redirect.startsWith('//') ? redirect : { name: 'home' },
-    )
+    if (mode.value === 'setup') await auth.setup({ ...form })
+    else await auth.login({ ...form })
+    await router.push(safeRedirect(route.query.redirect) ?? { name: 'adminNews' })
   } catch (e) {
-    formError.value =
-      e instanceof ApiError && e.code === 'MEMBER_UNAVAILABLE'
-        ? t('login.unavailable')
-        : t('login.failed')
+    if (e instanceof AdminApiError && e.code === 'SETUP_DONE') mode.value = 'login'
+    formError.value = adminErrorMessage(e, t)
   } finally {
     submitting.value = false
   }
+}
+
+const title = computed(() => (mode.value === 'setup' ? t('login.setupTitle') : t('login.title')))
+const submitText = computed(() => {
+  if (mode.value === 'setup')
+    return submitting.value ? t('login.setupSubmitting') : t('login.setupSubmit')
+  return submitting.value ? t('login.submitting') : t('login.submit')
+})
+const asideImage = {
+  backgroundImage: `linear-gradient(rgba(20,40,30,.25), rgba(20,40,30,.25)), url(${media.fieldBanner})`,
 }
 </script>
 
@@ -66,81 +127,109 @@ async function onSubmit(): Promise<void> {
     form.login-card(ref="formEl" novalidate @submit.prevent="onSubmit")
       header.login-card__head
         span.login-card__eyebrow {{ t('login.eyebrow') }}
-        h1.login-card__title {{ t('login.title') }}
-        p.login-card__lead {{ t('login.lead') }}
+        h1.login-card__title {{ title }}
+        p.login-card__lead(v-if="mode === 'setup'") {{ t('login.setupLead') }}
+        p.login-card__lead(v-else) {{ t('login.lead') }}
 
-      p.form-alert.form-alert--info(v-if="demo") {{ t('login.demo') }}
+      p.form-alert(v-if="!available" role="alert") {{ t('login.notConfigured') }}
+      p.form-alert.form-alert--info(v-if="mock") {{ t('login.demo', demoAccount) }}
+      p.form-alert.form-alert--info(v-if="expired && !formError" role="status") {{ t('login.expired') }}
       p.form-alert(v-if="formError" role="alert") {{ formError }}
 
-      FormField(
-        :id="ids.account"
-        :label="t('login.account')"
-        :error="errors.account"
-        required
-      )
-        input.field__input(
-          :id="ids.account"
-          v-model.trim="form.account"
-          v-bind="aria('account', ids.account)"
-          type="text"
-          inputmode="email"
-          autocomplete="username"
-          :placeholder="t('login.accountPlaceholder')"
-          @blur="errors.account && check('account')"
+      fieldset.login-card__fields(:disabled="!available")
+        FormField(
+          v-if="mode === 'setup'"
+          :id="ids.setupCode"
+          :label="t('login.setupCode')"
+          :error="errors.setupCode"
+          required
         )
-      FormField(
-        :id="ids.password"
-        :label="t('login.password')"
-        :error="errors.password"
-        required
-      )
-        input.field__input(
+          input.field__input(
+            :id="ids.setupCode"
+            v-model.trim="form.setupCode"
+            v-bind="aria('setupCode')"
+            type="text"
+            autocomplete="one-time-code"
+            autocapitalize="characters"
+            spellcheck="false"
+            :placeholder="t('login.setupCodePlaceholder')"
+            @blur="recheck('setupCode')"
+          )
+        FormField(
+          :id="ids.username"
+          :label="t('login.username')"
+          :error="errors.username"
+          required
+        )
+          input.field__input(
+            :id="ids.username"
+            v-model.trim="form.username"
+            v-bind="aria('username')"
+            type="text"
+            autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            maxlength="32"
+            :placeholder="mode === 'setup' ? t('login.usernameHint') : t('login.usernamePlaceholder')"
+            @blur="recheck('username')"
+          )
+        FormField(
           :id="ids.password"
-          v-model="form.password"
-          v-bind="aria('password', ids.password)"
-          :type="showPw ? 'text' : 'password'"
-          autocomplete="current-password"
-          :placeholder="t('login.passwordPlaceholder')"
-          @blur="errors.password && check('password')"
+          :label="t('login.password')"
+          :error="errors.password"
+          required
         )
-        button.field__addon(
-          type="button"
-          :aria-controls="ids.password"
-          :aria-pressed="showPw"
-          @click="showPw = !showPw"
-        ) {{ showPw ? t('login.hidePassword') : t('login.showPassword') }}
+          input.field__input(
+            :id="ids.password"
+            v-model="form.password"
+            v-bind="aria('password')"
+            :type="showPw ? 'text' : 'password'"
+            :autocomplete="mode === 'setup' ? 'new-password' : 'current-password'"
+            :placeholder="mode === 'setup' ? t('login.passwordHint') : t('login.passwordPlaceholder')"
+            @blur="recheck('password')"
+          )
+          button.field__addon(
+            type="button"
+            :aria-controls="ids.password"
+            :aria-pressed="showPw"
+            @click="showPw = !showPw"
+          ) {{ showPw ? t('login.hidePassword') : t('login.showPassword') }}
+        FormField(
+          v-if="mode === 'setup'"
+          :id="ids.passwordConfirm"
+          :label="t('login.passwordConfirm')"
+          :error="errors.passwordConfirm"
+          required
+        )
+          input.field__input(
+            :id="ids.passwordConfirm"
+            v-model="form.passwordConfirm"
+            v-bind="aria('passwordConfirm')"
+            :type="showPw ? 'text' : 'password'"
+            autocomplete="new-password"
+            :placeholder="t('login.passwordConfirmPlaceholder')"
+            @blur="recheck('passwordConfirm')"
+          )
 
-      .login-card__row
         label.checkbox
           input.checkbox__input(v-model="form.remember" type="checkbox")
           span.checkbox__box(aria-hidden="true")
           span.checkbox__text {{ t('login.remember') }}
-        RouterLink.text-link(:to="memberHelp") {{ t('login.forgot') }}
 
-      button.btn.btn--primary.btn--block.btn--lg.login-card__submit(
-        type="submit"
-        :disabled="submitting"
-      )
-        | {{ submitting ? t('login.submitting') : t('login.submit') }}
-      hr.login-card__rule
-      .login-card__row
-        span.login-card__hint {{ t('login.noAccount') }}
-        RouterLink.btn.btn--outline(:to="{ name: 'register' }") {{ t('login.register') }}
+        button.btn.btn--primary.btn--block.btn--lg.login-card__submit(
+          type="submit"
+          :disabled="submitting || !available"
+        ) {{ submitText }}
 
     aside.login__aside
-      span.login__image(
-        :style="{ backgroundImage: `linear-gradient(rgba(20,40,30,.25), rgba(20,40,30,.25)), url(${media.fieldBanner})` }"
-        aria-hidden="true"
-      )
-      InfoPanel(:title="t('login.featuresTitle')" size="lg")
+      span.login__image(:style="asideImage" aria-hidden="true")
+      InfoPanel(:title="t('login.asideTitle')" size="lg")
         ul.dot-list
           li(v-for="f in features()" :key="f") {{ f }}
-      InfoPanel(:title="t('login.helpTitle')" tone="card")
-        address.login__address
-          | {{ t('site.company') }}
-          br
-          | {{ t('site.address') }}
-        RouterLink.text-link(:to="memberHelp") {{ t('login.helpLink') }}
+      InfoPanel(:title="t('login.publishTitle')" tone="card")
+        p {{ t('login.publishBody') }}
+      InfoPanel(:title="t('login.forgotTitle')" tone="card")
+        p {{ t('login.forgotBody') }}
 </template>
 
 <style scoped lang="scss">
@@ -159,11 +248,6 @@ async function onSubmit(): Promise<void> {
     min-height: 200px;
     background-size: cover;
     background-position: center;
-  }
-
-  &__address {
-    font-style: normal;
-    font-size: 13px;
   }
 }
 
@@ -202,18 +286,18 @@ async function onSubmit(): Promise<void> {
     color: $c-muted;
   }
 
-  &__row {
+  &__fields {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    font-size: 13px;
-  }
+    flex-direction: column;
+    gap: 22px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
 
-  &__hint {
-    font-size: 14px;
-    color: $c-text;
+    &:disabled {
+      opacity: 0.6;
+    }
   }
 
   &__submit {
@@ -223,15 +307,8 @@ async function onSubmit(): Promise<void> {
 
     &:disabled {
       opacity: 0.7;
-      cursor: progress;
+      cursor: not-allowed;
     }
-  }
-
-  &__rule {
-    margin: 0;
-    border: 0;
-    height: 1px;
-    background: $c-line-soft-2;
   }
 
   .field__input {

@@ -3,7 +3,7 @@ import axios, { AxiosError, type AxiosInstance } from 'axios'
 /** 統一的 API 錯誤格式，元件層只需處理 message */
 export class ApiError extends Error {
   readonly status?: number
-  /** 前端可辨識的錯誤代碼，例如 MEMBER_UNAVAILABLE */
+  /** 前端可辨識的錯誤代碼，例如 CONTACT_FAILED */
   readonly code?: string
 
   constructor(message: string, status?: number, code?: string) {

@@ -66,7 +66,6 @@ export function sitemap(options: {
         '/news',
         '/farms',
         '/links',
-        '/register',
         '/contact',
         '/privacy',
       ]
@@ -92,7 +91,7 @@ export function sitemap(options: {
         this.warn('目前設定為不讓搜尋引擎收錄（VITE_NOINDEX=true 或未設定 VITE_SITE_URL）')
         return
       }
-      const robots = ['User-agent: *', 'Allow: /', 'Disallow: /login']
+      const robots = ['User-agent: *', 'Allow: /', 'Disallow: /login', 'Disallow: /admin']
       if (base) robots.push('', `Sitemap: ${base}/sitemap.xml`)
       this.emitFile({ type: 'asset', fileName: 'robots.txt', source: `${robots.join('\n')}\n` })
 

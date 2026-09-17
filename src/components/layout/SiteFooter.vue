@@ -28,9 +28,8 @@ footer.site-footer
         span.site-footer__label {{ t('footer.service') }}
         RouterLink(:to="{ name: 'farm' }") {{ t('nav.farm') }}
         RouterLink(:to="{ name: 'contact' }") {{ t('topbar.feedback') }}
-        RouterLink(:to="{ name: 'login' }") {{ t('footer.login') }}
-        RouterLink(:to="{ name: 'register' }") {{ t('footer.register') }}
         RouterLink(:to="{ name: 'privacy' }") {{ t('footer.privacy') }}
+        RouterLink.site-footer__admin(:to="{ name: 'login' }" rel="nofollow") {{ t('footer.adminLogin') }}
 </template>
 
 <style scoped lang="scss">
@@ -73,6 +72,12 @@ footer.site-footer
   &__text {
     font-style: normal;
     line-height: 1.95;
+  }
+
+  // 管理者入口：一般訪客用不到，降低存在感
+  &__admin {
+    font-size: 12px;
+    opacity: 0.7;
   }
 
   &__label {

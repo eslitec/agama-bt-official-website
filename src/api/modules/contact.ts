@@ -23,7 +23,7 @@ export const CONTACT_FIELDS = [
 /** 防機器人欄位（真人看不到，填了就會被 Netlify 當成垃圾訊息） */
 export const CONTACT_HONEYPOT = 'bot-field'
 
-export const CONTACT_TOPICS = ['apply', 'fee', 'member', 'complaint', 'website', 'other'] as const
+export const CONTACT_TOPICS = ['apply', 'fee', 'complaint', 'website', 'other'] as const
 export type ContactTopic = (typeof CONTACT_TOPICS)[number]
 
 export type ContactPayload = Record<(typeof CONTACT_FIELDS)[number], string>

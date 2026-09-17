@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { isNavigationFailure, useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { onKeyStroke, useEventListener, useMediaQuery } from '@vueuse/core'
@@ -13,7 +13,7 @@ const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
-const { user } = storeToRefs(auth)
+const { isLoggedIn } = storeToRefs(auth)
 const { condensed } = useScrollProgress()
 
 const NAV: NavKey[] = ['home', 'about', 'how', 'fee', 'unit', 'download', 'news', 'farm', 'link']
@@ -21,7 +21,7 @@ const activeKey = computed(() => route.meta.nav)
 
 /**
  * 版面密度：
- * - full：品牌、選單、登入同一列
+ * - full：品牌、選單（登入後加上後台、登出）同一列
  * - dense：同一列但縮小選單間距
  * - tight：同一列、再縮小間距並隱藏品牌英文副標（約 1024–1180px）
  * - compact：放不下一列（或 < 1024px）時收合成「選單」按鈕
@@ -58,7 +58,7 @@ onMounted(() => {
   void document.fonts?.ready.then(scheduleFit)
 })
 useEventListener('resize', scheduleFit, { passive: true })
-watch([locale, user, isNarrow], scheduleFit)
+watch([locale, isLoggedIn, isNarrow], scheduleFit)
 
 const headerClass = computed(() => [
   `site-header--${isCompact.value ? 'compact' : density.value}`,
@@ -77,9 +77,13 @@ watch(isCompact, (v) => {
 })
 onKeyStroke('Escape', () => (mobileOpen.value = false))
 
+/** 在後台時先離開（編輯中有未儲存內容時可取消），再清除登入狀態 */
 async function onLogout(): Promise<void> {
-  await auth.logout()
-  if (route.name !== 'home') await router.push({ name: 'home' })
+  if (route.meta.requiresAdmin) {
+    const failure = await router.push({ name: 'home' })
+    if (isNavigationFailure(failure)) return
+  }
+  auth.logout()
 }
 </script>
 
@@ -110,9 +114,10 @@ header.site-header(:class="headerClass")
             :class="{ 'is-active': activeKey === key }"
             :aria-current="activeKey === key ? 'page' : undefined"
           ) {{ t(`nav.${key}`) }}
-      .site-header__member
-        button.site-header__login(v-if="user" type="button" @click="onLogout") {{ t('nav.logout') }}
-        RouterLink.site-header__login(v-else :to="{ name: 'login' }") {{ t('nav.login') }}
+      //- 一般訪客不需要登入；管理者登入入口在頁尾
+      .site-header__admin(v-if="isLoggedIn")
+        RouterLink.site-header__login(:to="{ name: 'adminNews' }") {{ t('nav.admin') }}
+        button.site-header__logout(type="button" @click="onLogout") {{ t('nav.logout') }}
 </template>
 
 <style scoped lang="scss">
@@ -231,9 +236,24 @@ header.site-header(:class="headerClass")
     }
   }
 
-  &__member {
+  &__admin {
     display: flex;
+    align-items: center;
+    gap: 6px;
     flex-shrink: 0;
+  }
+
+  &__logout {
+    @include button-reset;
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: $c-nav-text;
+    white-space: nowrap;
+    @include focus-ring($c-paper);
+    @include hover {
+      background: rgba(248, 245, 238, 0.2);
+    }
   }
 
   &__login {
@@ -329,7 +349,7 @@ header.site-header(:class="headerClass")
       padding: 10px 13px;
     }
 
-    .site-header__member {
+    .site-header__admin {
       padding-top: 4px;
     }
   }

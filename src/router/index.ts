@@ -2,7 +2,12 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { applyPageMeta, NOINDEX } from '@/utils/seo'
-import type { RouteLocationNormalizedLoaded } from 'vue-router'
+import { safeRedirect } from '@/utils/redirect'
+import type {
+  RouteLocationNormalized,
+  RouteLocationNormalizedLoaded,
+  RouteLocationRaw,
+} from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 
 export type NavKey =
@@ -18,8 +23,12 @@ declare module 'vue-router' {
     zhContent?: boolean
     /** 對應主選單哪一項要亮起 */
     nav?: NavKey
-    /** 已登入者不需要進入的頁面（登入、註冊） */
+    /** 已登入的管理者不需要進入的頁面（登入）；會導向後台 */
     guestOnly?: boolean
+    /** 需要管理者登入 */
+    requiresAdmin?: boolean
+    /** 不讓搜尋引擎收錄（登入頁、後台） */
+    noindex?: boolean
   }
 }
 
@@ -101,13 +110,40 @@ const routes: RouteRecordRaw[] = [
     path: '/login',
     name: 'login',
     component: () => import('@/views/LoginView.vue'),
-    meta: { title: 'login.title', description: 'login.lead', guestOnly: true },
+    meta: { title: 'login.title', description: 'login.lead', guestOnly: true, noindex: true },
   },
   {
-    path: '/register',
-    name: 'register',
-    component: () => import('@/views/RegisterView.vue'),
-    meta: { title: 'register.title', description: 'seo.register', guestOnly: true },
+    path: '/admin',
+    component: () => import('@/views/admin/AdminLayout.vue'),
+    meta: { requiresAdmin: true, noindex: true, description: 'login.lead' },
+    children: [
+      { path: '', name: 'admin', redirect: { name: 'adminNews' } },
+      {
+        path: 'news',
+        name: 'adminNews',
+        component: () => import('@/views/admin/AdminNewsListView.vue'),
+        meta: { title: 'admin.news.title' },
+      },
+      {
+        path: 'news/new',
+        name: 'adminNewsNew',
+        component: () => import('@/views/admin/AdminNewsEditView.vue'),
+        meta: { title: 'admin.news.newTitle' },
+      },
+      {
+        path: 'news/:id(\\d+)',
+        name: 'adminNewsEdit',
+        component: () => import('@/views/admin/AdminNewsEditView.vue'),
+        props: (route) => ({ id: Number(route.params.id) }),
+        meta: { title: 'admin.news.editTitle' },
+      },
+      {
+        path: 'account',
+        name: 'adminAccount',
+        component: () => import('@/views/admin/AdminAccountView.vue'),
+        meta: { title: 'admin.account.title' },
+      },
+    ],
   },
   {
     path: '/contact',
@@ -151,17 +187,24 @@ export const applyRouteMeta = (to: RouteLocationNormalizedLoaded): void => {
     path: to.fullPath,
   })
   const robots = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]')
-  if (NOINDEX || to.name === 'notFound') {
+  if (NOINDEX || to.name === 'notFound' || to.meta.noindex) {
     const el = robots ?? document.head.appendChild(document.createElement('meta'))
     el.setAttribute('name', 'robots')
     el.setAttribute('content', NOINDEX ? 'noindex, nofollow' : 'noindex')
   } else robots?.remove()
 }
 
-router.beforeEach((to) => {
-  if (to.meta.guestOnly && useAuthStore().isLoggedIn) return { name: 'home' }
+/** 後台需要登入；已登入時登入頁直接進後台 */
+export function adminGuard(
+  to: Pick<RouteLocationNormalized, 'meta' | 'fullPath' | 'query'>,
+  loggedIn: boolean,
+): RouteLocationRaw | true {
+  if (to.meta.requiresAdmin && !loggedIn) return { name: 'login', query: { redirect: to.fullPath } }
+  if (to.meta.guestOnly && loggedIn) return safeRedirect(to.query.redirect) ?? { name: 'adminNews' }
   return true
-})
+}
+
+router.beforeEach((to) => adminGuard(to, useAuthStore().checkExpiry()))
 
 router.afterEach((to) => applyRouteMeta(to))
 

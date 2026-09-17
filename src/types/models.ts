@@ -99,33 +99,37 @@ export interface RelatedLink {
   href: string
 }
 
-/** 註冊表單「擬申請驗證類別」選項：value 為送出的中文值，labelEn 為英文顯示名稱 */
-export interface RegisterCategory {
-  value: string
-  labelEn?: string
+/* ───────── 管理者後台（apps-script/admin-api.gs） ───────── */
+
+/** 後台編輯用的消息（與試算表「最新消息」一列對應） */
+export interface AdminNewsItem {
+  id: number
+  /** 格式 YYYY.MM.DD */
+  date: string
+  src: string
+  srcEn: string
+  no: string
+  title: string
+  titleEn: string
+  atts: { label: string; href: string }[]
+  imgs: string[]
+  /** false 時公開網站不顯示（試算表「顯示」填 N） */
+  visible: boolean
 }
 
-export interface MemberUser {
-  name: string
-  status: string
+/** 新增、修改時送出的內容（ID 由伺服器指定） */
+export type AdminNewsInput = Omit<AdminNewsItem, 'id'>
+
+/** 登入成功後取得的權杖 */
+export interface AdminSession {
+  username: string
+  token: string
+  /** 權杖到期時間（epoch 毫秒） */
+  expiresAt: number
 }
 
-export interface LoginPayload {
-  account: string
-  password: string
-  remember: boolean
-}
-
-export interface RegisterPayload {
-  operatorName: string
-  taxId: string
-  owner: string
-  contact: string
-  phone: string
-  email: string
-  address: string
-  categories: string[]
-  password: string
-  passwordConfirm: string
-  agree: boolean
+export interface AdminAccount {
+  username: string
+  /** ISO 8601 */
+  createdAt: string
 }

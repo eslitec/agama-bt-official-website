@@ -2,14 +2,11 @@
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { usePreferencesStore } from '@/stores/preferences'
-import { useAuthStore } from '@/stores/auth'
-import { externalUrls } from '@/utils/media'
 import type { AppLocale } from '@/i18n'
 
 const { t } = useI18n()
 const prefs = usePreferencesStore()
 const { locale } = storeToRefs(prefs)
-const { isLoggedIn } = storeToRefs(useAuthStore())
 
 const locales: { value: AppLocale; label: string }[] = [
   { value: 'zh-TW', label: '中' },
@@ -23,13 +20,6 @@ const locales: { value: AppLocale; label: string }[] = [
     span.topbar__tagline {{ t('site.tagline') }}
     .topbar__actions
       RouterLink(:to="{ name: 'contact' }") {{ t('topbar.feedback') }}
-      a(
-        v-if="isLoggedIn"
-        :href="externalUrls.memberModify"
-        target="_blank"
-        rel="noopener"
-      ) {{ t('topbar.member') }}
-      RouterLink(v-else :to="{ name: 'login' }") {{ t('topbar.member') }}
       .topbar__lang(role="group" :aria-label="t('topbar.langLabel')")
         button.topbar__lang-btn(
           v-for="l in locales"

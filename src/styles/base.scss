@@ -205,6 +205,28 @@ img {
     padding: 16px;
     font-size: 16px;
   }
+
+  // 後台表格內的小按鈕
+  &--sm {
+    gap: 4px;
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+
+  &--danger {
+    border: 1px solid $c-danger;
+    color: $c-danger;
+    @include hover {
+      background: $c-danger;
+      color: $c-paper;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
 }
 
 .field {
