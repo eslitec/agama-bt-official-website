@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NewsItem } from '@/types/models'
+import { useLocalized } from '@/composables/useLocalized'
 
 withDefaults(
   defineProps<{
@@ -9,14 +10,16 @@ withDefaults(
   }>(),
   { variant: 'plain' },
 )
+
+const { pick, langOf } = useLocalized()
 </script>
 
 <template lang="pug">
-ul.news-list(:class="`news-list--${variant}`" lang="zh-Hant-TW")
+ul.news-list(:class="`news-list--${variant}`")
   li.news-list__item(v-for="n in items" :key="n.id")
     RouterLink.news-list__link(:to="{ name: 'newsDetail', params: { id: n.id } }")
       time.news-list__date(:datetime="n.date.replaceAll('.', '-')") {{ n.date }}
-      span.news-list__title {{ n.title }}
+      span.news-list__title(:lang="langOf(n.titleEn)") {{ pick(n.title, n.titleEn) }}
 </template>
 
 <style scoped lang="scss">

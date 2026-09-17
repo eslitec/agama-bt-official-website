@@ -34,6 +34,35 @@ export function fileHref(link = ''): string {
 const ext = (format = '', name = ''): string =>
   (format.trim() || name.match(/\.(\w{2,5})$/)?.[1] || 'FILE').toUpperCase()
 
+/**
+ * 選填的英文欄位：有值時回傳 `{ [key]: 值 }`，空白時回傳 `{}`（不留 `key: undefined`），
+ * 用法：`{ name, ...optional('nameEn', r['名稱（英文）']) }`。
+ */
+export function optional<K extends string>(key: K, value?: string): Partial<Record<K, string>> {
+  const v = value?.trim()
+  return v ? ({ [key]: v } as Record<K, string>) : {}
+}
+
+/** 附件名稱中英對照（以開頭比對，後面的日期等文字原樣保留，例如「報名連結 7/9」→「Registration 7/9」） */
+const ATTACHMENT_LABELS_EN: [zh: string, en: string][] = [
+  ['有機農業商品化資材網路公開品牌', 'Approved organic farming inputs (online brand list)'],
+  ['公告連結', 'Announcement'],
+  ['附件連結', 'Attachment'],
+  ['報名連結', 'Registration'],
+]
+
+/** 附件名稱的英文；對照表沒有、或後面接的文字含中文時回傳 undefined（英文介面改顯示中文） */
+export function attachmentLabelEn(label: string): string | undefined {
+  const v = label.trim()
+  for (const [zh, en] of ATTACHMENT_LABELS_EN) {
+    if (!v.startsWith(zh)) continue
+    const rest = v.slice(zh.length)
+    if (/[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]/.test(rest)) return undefined
+    return `${en}${rest}`.trim()
+  }
+  return undefined
+}
+
 /** 日期統一成 YYYY.MM.DD（接受 2026/6/2、2026-06-02） */
 export function normalizeDate(v = ''): string {
   const m = v.trim().match(/^(\d{4})\D(\d{1,2})\D(\d{1,2})$/)
@@ -45,7 +74,8 @@ export function parseAttachments(v = ''): NewsAttachment[] {
   return lines(v).flatMap((line) => {
     const m = line.match(/^(.*?)[\s|｜]*(https?:\/\/\S+)$/)
     if (!m) return []
-    return [{ label: m[1].replace(/[|｜]\s*$/, '').trim() || '連結', href: m[2] }]
+    const label = m[1].replace(/[|｜]\s*$/, '').trim() || '連結'
+    return [{ label, ...optional('labelEn', attachmentLabelEn(label)), href: m[2] }]
   })
 }
 
@@ -62,8 +92,10 @@ export function toNews(records: SheetRecord[]): NewsItem[] {
       id,
       date: normalizeDate(r['日期']),
       src: r['來源機關'] ?? '',
+      ...optional('srcEn', r['來源機關（英文）']),
       no: r['公告編號'] ?? '',
       title,
+      ...optional('titleEn', r['標題（英文）']),
       atts: parseAttachments(r['附件']),
       ...(imgs.length ? { imgs } : {}),
     })
@@ -71,19 +103,33 @@ export function toNews(records: SheetRecord[]): NewsItem[] {
   return items.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
 }
 
-const toFile = (r: SheetRecord, nameKey: string): DownloadFile | null => {
-  const name = r[nameKey] ?? ''
+const toFile = (r: SheetRecord): DownloadFile | null => {
+  const name = r['檔名'] ?? ''
   const href = fileHref(r['檔案連結'])
-  return name && href && isShown(r) ? { name, ext: ext(r['格式'], name), href } : null
+  return name && href && isShown(r)
+    ? { name, ...optional('nameEn', r['檔名（英文）']), ext: ext(r['格式'], name), href }
+    : null
 }
 
 export function toDownloadGroups(records: SheetRecord[]): DownloadGroup[] {
   const groups = new Map<string, DownloadGroup>()
+  // 分類英文名稱：同一分類編號中第一個有填的列（不必每列都填）
+  const titlesEn = new Map<string, string>()
   for (const r of records) {
-    const file = toFile(r, '檔名')
+    const n = r['分類編號'] || '99'
+    const titleEn = r['分類名稱（英文）']?.trim()
+    if (titleEn && !titlesEn.has(n)) titlesEn.set(n, titleEn)
+  }
+  for (const r of records) {
+    const file = toFile(r)
     if (!file) continue
     const n = r['分類編號'] || '99'
-    const group = groups.get(n) ?? { n, title: r['分類名稱'] || '其他', files: [] }
+    const group = groups.get(n) ?? {
+      n,
+      title: r['分類名稱'] || '其他',
+      ...optional('titleEn', titlesEn.get(n)),
+      files: [],
+    }
     group.files.push(file)
     groups.set(n, group)
   }
@@ -91,12 +137,16 @@ export function toDownloadGroups(records: SheetRecord[]): DownloadGroup[] {
 }
 
 export const toQuickFiles = (records: SheetRecord[]): DownloadFile[] =>
-  records.map((r) => toFile(r, '檔名')).filter((f): f is DownloadFile => f !== null)
+  records.map((r) => toFile(r)).filter((f): f is DownloadFile => f !== null)
 
 export const toFeeDocs = (records: SheetRecord[]): FeeDoc[] =>
   records
     .filter((r) => r['名稱'] && r['檔案連結'] && isShown(r))
-    .map((r) => ({ name: r['名稱'], href: fileHref(r['檔案連結']) }))
+    .map((r) => ({
+      name: r['名稱'],
+      ...optional('nameEn', r['名稱（英文）']),
+      href: fileHref(r['檔案連結']),
+    }))
 
 const FARM_ICONS: FarmIconKey[] = ['clam', 'rice', 'mango', 'sprout', 'wheat']
 
@@ -105,8 +155,11 @@ export const toFarms = (records: SheetRecord[]): Farm[] =>
     .filter((r) => r['名稱'] && isShown(r))
     .map((r) => ({
       name: r['名稱'],
+      ...optional('nameEn', r['名稱（英文）']),
       city: r['縣市'] ?? '',
+      ...optional('cityEn', r['縣市（英文）']),
       addr: r['地址'] ?? '',
+      ...optional('addrEn', r['地址（英文）']),
       tel: r['電話'] ?? '',
       fax: r['傳真'] ?? '',
       email: r['Email'] ?? '',

@@ -249,6 +249,7 @@ function reset(): void {
           FileLink(
             v-if="complaintForm"
             :name="complaintForm.name"
+            :name-en="complaintForm.nameEn"
             :href="complaintForm.href"
             :ext="complaintForm.ext"
             variant="tile"

@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { csvToRecords, parseCsv } from '@/utils/csv'
 import {
+  attachmentLabelEn,
   fileHref,
   isShown,
   normalizeDate,
@@ -20,7 +21,19 @@ import { feesData } from '@/api/data/fees.data'
 import { farmsData } from '@/api/data/farms.data'
 import { driveFile } from '@/utils/drive'
 
-/** 由目前內建資料匯出、與 Google 試算表發布格式相同（CRLF、雙引號跳脫）的 CSV */
+/** 移除所有名稱以 En 結尾的欄位（含巢狀的附件、檔案），比對中文內容用 */
+const stripEn = <T>(value: T): T => {
+  if (Array.isArray(value)) return value.map(stripEn) as T
+  if (value && typeof value === 'object')
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([k]) => !k.endsWith('En'))
+        .map(([k, v]) => [k, stripEn(v)]),
+    ) as T
+  return value
+}
+
+/** 從 Google 試算表下載的 CSV（含英文欄位；CRLF、雙引號跳脫，與發布輸出逐位元組相同） */
 const fixture = (tab: string) =>
   csvToRecords(readFileSync(resolve(process.cwd(), `tests/fixtures/sheet-${tab}.csv`), 'utf8'))
 
@@ -57,7 +70,7 @@ describe('試算表欄位轉換', () => {
     expect(isShown({ 顯示: 'N' })).toBe(false)
     expect(isShown({ 顯示: '' })).toBe(true)
     expect(parseAttachments('公告連結 | https://a.tw/x?y=1\nhttps://b.tw\n亂打的')).toEqual([
-      { label: '公告連結', href: 'https://a.tw/x?y=1' },
+      { label: '公告連結', labelEn: 'Announcement', href: 'https://a.tw/x?y=1' },
       { label: '連結', href: 'https://b.tw' },
     ])
   })
@@ -86,6 +99,7 @@ describe('試算表內容與內建資料一致（搬移時沒有遺漏）', () =
         .sort((a, b) => a.id - b.id)
     const fromSheet = toNews(fixture('news'))
     expect(fromSheet).toHaveLength(newsData.length)
+    // 含英文欄位（xxxEn）一起比對
     expect(decoded(fromSheet)).toEqual(decoded(newsData))
   })
 
@@ -100,5 +114,108 @@ describe('試算表內容與內建資料一致（搬移時沒有遺漏）', () =
     expect(sheetCsvUrl('news', 'KEY')).toBe(
       'https://docs.google.com/spreadsheets/d/e/KEY/pub?gid=40890007&single=true&output=csv',
     )
+  })
+})
+
+describe('英文欄位', () => {
+  const quote = (v: string) => (/[",\r\n]/.test(v) ? `"${v.replaceAll('"', '""')}"` : v)
+  const csv = (rows: string[][]) =>
+    csvToRecords(rows.map((r) => r.map(quote).join(',')).join('\r\n'))
+  const DRIVE = 'https://drive.google.com/file/d/1hKfjVrPA_lKRD0qy-1Yo52788dBMNQE8/view'
+
+  it('去掉 En 欄位的比對工具會處理巢狀資料', () => {
+    expect(
+      stripEn([{ title: 'A', titleEn: 'a', atts: [{ label: 'L', labelEn: 'l', href: 'h' }] }]),
+    ).toEqual([{ title: 'A', atts: [{ label: 'L', href: 'h' }] }])
+  })
+
+  it('最新消息：標題（英文）、來源機關（英文）', () => {
+    const [a, b] = toNews(
+      csv([
+        ['ID', '日期', '來源機關', '來源機關（英文）', '標題', '標題（英文）', '附件'],
+        ['2', '2026.02.01', '農業部', 'Ministry of Agriculture', '補助', ' Subsidy ', ''],
+        ['1', '2026.01.01', '農業部', '', '講習', '', ''],
+      ]),
+    )
+    expect(a).toEqual({
+      id: 2,
+      date: '2026.02.01',
+      src: '農業部',
+      srcEn: 'Ministry of Agriculture',
+      no: '',
+      title: '補助',
+      titleEn: 'Subsidy',
+      atts: [],
+    })
+    // 空白的英文欄位不留 key
+    expect(b).not.toHaveProperty('titleEn')
+    expect(b).not.toHaveProperty('srcEn')
+    expect(Object.keys(b!)).toEqual(['id', 'date', 'src', 'no', 'title', 'atts'])
+  })
+
+  it('資料下載：分類名稱（英文）取同分類第一個有填的列，檔名（英文）', () => {
+    const groups = toDownloadGroups(
+      csv([
+        ['分類編號', '分類名稱', '分類名稱（英文）', '檔名', '檔名（英文）', '格式', '檔案連結'],
+        ['01', '申請書', '', '甲', 'Form A', 'DOC', DRIVE],
+        ['01', '申請書', 'Application Forms', '乙', '', 'PDF', DRIVE],
+        ['01', '申請書', 'Ignored', '丙', '', 'PDF', DRIVE],
+        ['02', '規範', '', '丁', '', 'PDF', DRIVE],
+      ]),
+    )
+    expect(groups[0]!.titleEn).toBe('Application Forms')
+    expect(groups[0]!.files.map((f) => f.nameEn)).toEqual(['Form A', undefined, undefined])
+    expect(groups[0]!.files[1]).not.toHaveProperty('nameEn')
+    expect(groups[1]).not.toHaveProperty('titleEn')
+  })
+
+  it('首頁常用下載、收費文件、農場', () => {
+    const [quick] = toQuickFiles(
+      csv([
+        ['檔名', '檔名（英文）', '格式', '檔案連結'],
+        ['申請書', 'Application', 'DOC', DRIVE],
+      ]),
+    )
+    expect(quick!.nameEn).toBe('Application')
+
+    const fees = toFeeDocs(
+      csv([
+        ['名稱', '名稱（英文）', '檔案連結'],
+        ['收費', 'Fees', DRIVE],
+        ['收費二', '', DRIVE],
+      ]),
+    )
+    expect(fees[0]!.nameEn).toBe('Fees')
+    expect(fees[1]).not.toHaveProperty('nameEn')
+
+    const [farm, other] = toFarms(
+      csv([
+        ['名稱', '名稱（英文）', '縣市', '縣市（英文）', '地址', '地址（英文）', '圖示'],
+        ['文蛤班', 'Clam Group', '臺南市', 'Tainan City', '海浦 30 號', 'No. 30, Haipu', 'clam'],
+        ['農會', '', '花蓮縣', '', '富里', '', ''],
+      ]),
+    )
+    expect(farm).toMatchObject({
+      nameEn: 'Clam Group',
+      cityEn: 'Tainan City',
+      addrEn: 'No. 30, Haipu',
+    })
+    expect(Object.keys(other!).filter((k) => k.endsWith('En'))).toEqual([])
+  })
+
+  it('附件名稱英文對照（開頭比對、保留後綴）', () => {
+    expect(attachmentLabelEn('公告連結')).toBe('Announcement')
+    expect(attachmentLabelEn('附件連結')).toBe('Attachment')
+    expect(attachmentLabelEn('報名連結 7/9')).toBe('Registration 7/9')
+    expect(attachmentLabelEn('有機農業商品化資材網路公開品牌')).toBe(
+      'Approved organic farming inputs (online brand list)',
+    )
+    expect(attachmentLabelEn('簡章')).toBeUndefined()
+    expect(attachmentLabelEn('連結')).toBeUndefined()
+    expect(attachmentLabelEn('公告連結（修正）')).toBeUndefined()
+    expect(parseAttachments('報名連結 8/7 | https://a.tw\n簡章 | https://b.tw')).toEqual([
+      { label: '報名連結 8/7', labelEn: 'Registration 8/7', href: 'https://a.tw' },
+      { label: '簡章', href: 'https://b.tw' },
+    ])
   })
 })

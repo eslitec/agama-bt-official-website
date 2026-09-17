@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { CertUnit, Farm, NewsItem } from '@/types/models'
 import { filterFarms, filterNews, filterUnits } from '@/utils/filters'
 import { newsData } from '@/api/data/news.data'
 import { unitsData } from '@/api/data/units.data'
@@ -32,5 +33,52 @@ describe('filterFarms', () => {
     expect(filterFarms(farmsData, '臺南市')).toHaveLength(2)
     expect(filterFarms(farmsData, '番金路')).toHaveLength(1)
     expect(filterFarms(farmsData, '不存在')).toHaveLength(0)
+  })
+})
+
+describe('英文欄位', () => {
+  const news: NewsItem[] = [
+    {
+      id: 1,
+      date: '2026.01.01',
+      src: '',
+      no: '',
+      title: '補助公告',
+      titleEn: 'Subsidy Notice',
+      atts: [],
+    },
+    { id: 2, date: '2026.01.02', src: '', no: '', title: '講習會', atts: [] },
+  ]
+
+  it('消息同時比對中英文標題，英文不分大小寫', () => {
+    expect(filterNews(news, 'SUBSIDY').map((n) => n.id)).toEqual([1])
+    expect(filterNews(news, 'notice').map((n) => n.id)).toEqual([1])
+    expect(filterNews(news, '講習').map((n) => n.id)).toEqual([2])
+    expect(filterNews(news, '補助').map((n) => n.id)).toEqual([1])
+  })
+
+  it('類別比對英文名稱與說明', () => {
+    const units: CertUnit[] = [
+      { ...unitsData[0]!, cid: 1, nameEn: 'Organic Crops', descEn: 'Fields and crops' },
+      { ...unitsData[1]!, cid: 2, nameEn: undefined, descEn: undefined },
+    ]
+    expect(filterUnits(units, 'organic').map((u) => u.cid)).toEqual([1])
+    expect(filterUnits(units, 'FIELDS').map((u) => u.cid)).toEqual([1])
+  })
+
+  it('農場比對英文名稱、縣市與地址', () => {
+    const farms: Farm[] = [
+      {
+        ...farmsData[0]!,
+        nameEn: 'Qigu Clam Group',
+        cityEn: 'Tainan City',
+        addrEn: 'No. 30, Haipu',
+      },
+      { ...farmsData[1]! },
+    ]
+    expect(filterFarms(farms, 'clam')).toHaveLength(1)
+    expect(filterFarms(farms, 'tainan')).toHaveLength(1)
+    expect(filterFarms(farms, 'HAIPU')).toHaveLength(1)
+    expect(filterFarms(farms, '花蓮')).toHaveLength(1)
   })
 })

@@ -1,20 +1,26 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { computed } from 'vue'
 import MIcon from './MIcon.vue'
+import { useLocalized } from '@/composables/useLocalized'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     name: string
+    /** 英文檔名（英文介面有值時顯示） */
+    nameEn?: string
     href: string
     ext: string
     /** card：白底卡片；tile：米色底磚；feature：收費文件大卡 */
     variant?: 'card' | 'tile' | 'feature'
     icon?: string
   }>(),
-  { variant: 'card', icon: 'description' },
+  { nameEn: undefined, variant: 'card', icon: 'description' },
 )
 
 const { t } = useI18n()
+const { pick, langOf } = useLocalized()
+const label = computed(() => pick(props.name, props.nameEn))
 </script>
 
 <template lang="pug">
@@ -23,10 +29,10 @@ a.file-link(
   :href="href"
   target="_blank"
   rel="noopener"
-  :aria-label="`${t('common.fileLabel', { name, ext })} ${t('common.externalLink')}`"
+  :aria-label="`${t('common.fileLabel', { name: label, ext })} ${t('common.externalLink')}`"
 )
   MIcon.file-link__icon(:name="icon")
-  span.file-link__name(lang="zh-Hant-TW") {{ name }}
+  span.file-link__name(:lang="langOf(nameEn)") {{ label }}
   span.file-link__ext {{ ext }} ↓
 </template>
 

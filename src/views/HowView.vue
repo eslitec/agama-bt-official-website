@@ -7,11 +7,13 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import InfoPanel from '@/components/common/InfoPanel.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
+import { useLocalized } from '@/composables/useLocalized'
 import { fetchProcessSteps } from '@/api'
 
 type HowTab = 'organic' | 'traceable'
 
 const { t } = useI18n()
+const { pick, langOf } = useLocalized()
 const route = useRoute()
 const router = useRouter()
 const { data: steps, loading, error, reload } = useAsyncData(fetchProcessSteps, [])
@@ -57,8 +59,8 @@ const tabs = computed(() => [
           li.how-step(v-for="s in steps" :key="s.n")
             .how-step__head
               span.how-step__num {{ t('common.step', { n: s.n }) }}
-              h2.how-step__title(lang="zh-Hant-TW") {{ s.title }}
-            p.how-step__body(lang="zh-Hant-TW") {{ s.body }}
+              h2.how-step__title(:lang="langOf(s.titleEn)") {{ pick(s.title, s.titleEn) }}
+            p.how-step__body(:lang="langOf(s.bodyEn)") {{ pick(s.body, s.bodyEn) }}
       InfoPanel(:title="t('how.addressTitle')" size="lg")
         p {{ t('common.mailing', { address: t('site.address'), company: t('site.company') }) }}
         RouterLink.text-link(:to="{ name: 'download' }") {{ t('how.downloadLink') }}

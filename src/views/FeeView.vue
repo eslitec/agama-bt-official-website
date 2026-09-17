@@ -21,6 +21,7 @@ const { data: fees, loading, error, reload } = useAsyncData(fetchFeeDocs, [])
           v-for="f in fees"
           :key="f.href"
           :name="f.name"
+          :name-en="f.nameEn"
           :href="f.href"
           ext="PDF"
           icon="picture_as_pdf"

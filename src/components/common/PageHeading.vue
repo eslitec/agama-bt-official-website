@@ -3,8 +3,10 @@ defineProps<{
   eyebrow: string
   title: string
   lead?: string
-  /** 標題與導言的語系（資料只有中文時用） */
+  /** 標題與導言的語系（顯示資料內容時用） */
   contentLang?: string
+  /** 導言的語系（與標題不同時；預設同 contentLang） */
+  leadLang?: string
 }>()
 </script>
 
@@ -13,7 +15,7 @@ header.page-heading
   slot(name="before")
   span.page-heading__eyebrow {{ eyebrow }}
   h1.page-heading__title(:lang="contentLang") {{ title }}
-  p.page-heading__lead(v-if="lead || $slots.lead" :lang="contentLang")
+  p.page-heading__lead(v-if="lead || $slots.lead" :lang="leadLang ?? contentLang")
     slot(name="lead") {{ lead }}
 </template>
 

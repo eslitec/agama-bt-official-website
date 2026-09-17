@@ -7,12 +7,14 @@ import SearchField from '@/components/common/SearchField.vue'
 import InfoPanel from '@/components/common/InfoPanel.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
+import { useLocalized } from '@/composables/useLocalized'
 import { useQueryParam } from '@/composables/useQueryParam'
 import { fetchUnits } from '@/api'
 import { filterUnits } from '@/utils/filters'
 import { externalUrls } from '@/utils/media'
 
 const { t } = useI18n()
+const { pick, langOf } = useLocalized()
 const unitQuery = useQueryParam('q', [])
 const { data: units, loading, error, reload } = useAsyncData(fetchUnits, [])
 const filtered = computed(() => filterUnits(units.value, unitQuery.value))
@@ -31,14 +33,17 @@ const filtered = computed(() => filterUnits(units.value, unitQuery.value))
     AsyncState(:loading="loading" :error="error" @retry="reload")
       ul.unit-grid(v-reveal.stagger aria-live="polite")
         li(v-for="u in filtered" :key="u.cid")
-          RouterLink.unit-card(
-            :to="{ name: 'unitDetail', params: { cid: u.cid } }"
+          a.unit-card(
+            :href="u.portalUrl"
+            target="_blank"
+            rel="noopener"
             :style="{ '--cat-color': u.color }"
           )
             MIcon.unit-card__icon(:name="u.icon" :size="36")
-            span.unit-card__name(lang="zh-Hant-TW") {{ u.name }}
-            span.unit-card__desc(lang="zh-Hant-TW") {{ u.desc }}
+            span.unit-card__name(:lang="langOf(u.nameEn)") {{ pick(u.name, u.nameEn) }}
+            span.unit-card__desc(:lang="langOf(u.descEn)") {{ pick(u.desc, u.descEn) }}
             span.unit-card__cta {{ t('unit.viewList') }}
+            span.visually-hidden {{ t('common.externalLink') }}
         li.unit-grid__empty(v-if="!filtered.length") {{ t('unit.empty') }}
     InfoPanel(:title="t('unit.portalTitle')")
       a.text-link(:href="externalUrls.traceableLookup" target="_blank" rel="noopener") {{ t('unit.portalTraceable') }}

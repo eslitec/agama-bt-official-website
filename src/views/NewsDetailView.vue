@@ -8,12 +8,15 @@ import ImageLightbox from '@/components/common/ImageLightbox.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
+import { useLocalized } from '@/composables/useLocalized'
 import { fetchNewsList } from '@/api'
+import { attachmentLabelEn } from '@/api/sheet-mappers'
 import { applyPageMeta, excerpt } from '@/utils/seo'
 
 const props = defineProps<{ id: number }>()
 
 const { t, locale } = useI18n()
+const { pick, langOf } = useLocalized()
 const route = useRoute()
 const { data: news, loading, error, reload } = useAsyncData(fetchNewsList, [])
 
@@ -21,7 +24,17 @@ const item = computed(() => news.value.find((n) => n.id === props.id))
 const others = computed(() => news.value.filter((n) => n.id !== props.id).slice(0, 5))
 const lightbox = ref<string | null>(null)
 
-// 標題以【公告】開頭的是公司自己的公告，其餘為轉知主管機關訊息
+const title = computed(() => (item.value ? pick(item.value.title, item.value.titleEn) : ''))
+const source = computed(() => (item.value ? pick(item.value.src, item.value.srcEn) : ''))
+// 附件名稱：資料沒有英文時用常見名稱對照（公告連結、報名連結…）
+const atts = computed(() =>
+  (item.value?.atts ?? []).map((a) => {
+    const en = a.labelEn ?? attachmentLabelEn(a.label)
+    return { ...a, text: pick(a.label, en), lang: langOf(en) }
+  }),
+)
+
+// 標題（中文）以【公告】開頭的是公司自己的公告，其餘為轉知主管機關訊息
 const badge = computed(() =>
   item.value?.title.startsWith('【公告】')
     ? t('newsDetail.badgeAnnounce')
@@ -34,8 +47,8 @@ watch(
   () => {
     if (!item.value) return
     applyPageMeta({
-      title: `${item.value.title}${t('site.titleSep')}${t('site.name')}`,
-      description: excerpt(`${item.value.date} ${item.value.src} ${item.value.title}`),
+      title: `${title.value}${t('site.titleSep')}${t('site.name')}`,
+      description: excerpt(`${item.value.date} ${source.value} ${title.value}`),
       path: route.fullPath,
     })
   },
@@ -59,22 +72,22 @@ watch(
           time.news-article__date(:datetime="item.date.replaceAll('.', '-')") {{ item.date }}
           i18n-t.news-article__src(keypath="newsDetail.metaSrc" tag="span" scope="global")
             template(#src)
-              span(lang="zh-Hant-TW") {{ item.src }}
+              span(:lang="langOf(item.srcEn)") {{ source }}
           span.news-article__src(v-if="item.no") {{ t('newsDetail.metaNo', { no: item.no }) }}
-        h1.news-article__title(lang="zh-Hant-TW") {{ item.title }}
+        h1.news-article__title(:lang="langOf(item.titleEn)") {{ title }}
         hr.news-article__rule
 
         section.news-article__block(v-if="item.atts.length")
           h2.news-article__block-title {{ t('newsDetail.attachments') }}
           a.att-link(
-            v-for="a in item.atts"
+            v-for="a in atts"
             :key="a.href + a.label"
             :href="a.href"
             target="_blank"
             rel="noopener"
           )
             MIcon(name="link" :size="20")
-            span.att-link__label(lang="zh-Hant-TW") {{ a.label }}
+            span.att-link__label(:lang="a.lang") {{ a.text }}
             span.att-link__arrow(aria-hidden="true") ↗
             span.visually-hidden {{ t('common.externalLink') }}
 

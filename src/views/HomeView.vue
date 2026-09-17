@@ -10,12 +10,14 @@ import FileLink from '@/components/common/FileLink.vue'
 import SearchField from '@/components/common/SearchField.vue'
 import CountStat from '@/components/common/CountStat.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
+import { useLocalized } from '@/composables/useLocalized'
 import { fetchNewsList, fetchProcessSteps, fetchQuickFiles, fetchUnits } from '@/api'
 import { filterNews, filterUnits } from '@/utils/filters'
 import { heroVideo, media } from '@/utils/media'
 import { prefersReducedMotion } from '@/composables/usePrefersReducedMotion'
 
 const { t } = useI18n()
+const { pick, langOf } = useLocalized()
 const router = useRouter()
 // 首頁的搜尋只做快速預覽；按 Enter 或「查看全部」會帶關鍵字到列表頁（網址 ?q=）
 const newsQuery = ref('')
@@ -110,7 +112,7 @@ const bandBg = computed(() => ({
           li(v-for="u in filteredUnits" :key="u.cid")
             RouterLink.unit-finder__item(:to="{ name: 'unitDetail', params: { cid: u.cid } }")
               MIcon(:name="u.icon" :size="19" :style="{ color: u.color }")
-              span.unit-finder__name(lang="zh-Hant-TW") {{ u.name }}
+              span.unit-finder__name(:lang="langOf(u.nameEn)") {{ pick(u.name, u.nameEn) }}
               span.unit-finder__chev(aria-hidden="true") ›
           li.unit-finder__empty(v-if="units.length && !filteredUnits.length") {{ t('unit.empty') }}
         RouterLink.text-link.unit-finder__all(:to="searchTo('unit', unitQuery)") {{ t('home.unitSearchAll') }}
@@ -157,9 +159,9 @@ const bandBg = computed(() => ({
             :style="{ '--cat-color': u.color }"
           )
             MIcon.cat-card__icon(:name="u.icon" :size="36")
-            span.cat-card__body(lang="zh-Hant-TW")
-              span.cat-card__name {{ u.name }}
-              span.cat-card__desc {{ u.desc }}
+            span.cat-card__body
+              span.cat-card__name(:lang="langOf(u.nameEn)") {{ pick(u.name, u.nameEn) }}
+              span.cat-card__desc(:lang="langOf(u.descEn)") {{ pick(u.desc, u.descEn) }}
             span.cat-card__arrow(aria-hidden="true") →
 
   //- ── 驗證流程 ───────────────────────────────
@@ -180,7 +182,7 @@ const bandBg = computed(() => ({
           @click="activeStep = i"
         )
           span.step-chip__num {{ t('common.step', { n: s.n }) }}
-          span.step-chip__title(lang="zh-Hant-TW") {{ s.title }}
+          span.step-chip__title(:lang="langOf(s.titleEn)") {{ pick(s.title, s.titleEn) }}
       #step-panel.home-process__panel(
         v-if="currentStep"
         role="tabpanel"
@@ -188,8 +190,10 @@ const bandBg = computed(() => ({
       )
         .home-process__panel-head
           span.home-process__panel-num {{ t('common.step', { n: currentStep.n }) }}
-          span.home-process__panel-title(lang="zh-Hant-TW") {{ currentStep.title }}
-        p.home-process__panel-body(lang="zh-Hant-TW") {{ currentStep.body }}
+          span.home-process__panel-title(:lang="langOf(currentStep.titleEn)")
+            | {{ pick(currentStep.title, currentStep.titleEn) }}
+        p.home-process__panel-body(:lang="langOf(currentStep.bodyEn)")
+          | {{ pick(currentStep.body, currentStep.bodyEn) }}
 
   //- ── 最新消息＋常用下載 ─────────────────────
   section.home-split.l-section

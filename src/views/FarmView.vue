@@ -7,11 +7,19 @@ import FarmIcon from '@/components/common/FarmIcon.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
+import { useLocalized } from '@/composables/useLocalized'
 import { useQueryParam } from '@/composables/useQueryParam'
 import { fetchFarms } from '@/api'
+import type { Farm } from '@/types/models'
 import { filterFarms } from '@/utils/filters'
 
 const { t } = useI18n()
+const { isEn, pick, langOf } = useLocalized()
+// 地址：英文介面且有英文地址時顯示「地址, 縣市」，否則顯示中文「縣市地址」
+const addressOf = (f: Farm): { text: string; lang: string } =>
+  isEn.value && f.addrEn?.trim()
+    ? { text: [f.addrEn, f.cityEn].filter(Boolean).join(', '), lang: langOf(f.addrEn) }
+    : { text: `${f.city}${f.addr}`, lang: langOf() }
 const query = useQueryParam('q', [])
 const { data: farms, loading, error, reload } = useAsyncData(fetchFarms, [])
 const filtered = computed(() => filterFarms(farms.value, query.value))
@@ -36,8 +44,8 @@ const filtered = computed(() => filterFarms(farms.value, query.value))
             span.farm-card__icon
               FarmIcon(:icon="f.icon")
             span.farm-card__title
-              h2.farm-card__name(lang="zh-Hant-TW") {{ f.name }}
-              span.farm-card__city(lang="zh-Hant-TW") {{ f.city }}
+              h2.farm-card__name(:lang="langOf(f.nameEn)") {{ pick(f.name, f.nameEn) }}
+              span.farm-card__city(:lang="langOf(f.cityEn)") {{ pick(f.city, f.cityEn) }}
           dl.farm-card__info
             .farm-card__row(v-if="f.tel")
               dt {{ t('farm.tel') }}
@@ -52,7 +60,7 @@ const filtered = computed(() => filterFarms(farms.value, query.value))
                 a(:href="`mailto:${f.email}`") {{ f.email }}
             .farm-card__row
               dt {{ t('farm.address') }}
-              dd(lang="zh-Hant-TW") {{ f.city }}{{ f.addr }}
+              dd(:lang="addressOf(f).lang") {{ addressOf(f).text }}
       EmptyState(v-else :message="t('farm.empty')")
 </template>
 

@@ -45,7 +45,8 @@ const en: MessageSchema = {
     fileLabel: '{name} ({ext})',
     mailing: '{company}, {address}',
     mailingBlock: '{company}\n{address}',
-    zhOnly: 'This content is available in Traditional Chinese only.',
+    zhOnly:
+      'English translations are provided for reference. Official documents and linked websites are in Traditional Chinese, and the Chinese version prevails.',
   },
   home: {
     heroEyebrow: 'TAF-ACCREDITED CERTIFICATION BODY',
@@ -57,7 +58,7 @@ const en: MessageSchema = {
     unitSearchTitle: 'Certification categories',
     unitSearchLead:
       'Filter categories by keyword, then open one to see how to look up its certified operators.',
-    unitSearchPlaceholder: 'Keyword, e.g. 有機, 水產',
+    unitSearchPlaceholder: 'Keyword, e.g. organic, aquaculture',
     unitSearchAll: 'All categories →',
     noticeBadge: 'Notices',
     noticeLead: 'Recent notices from authorities and the company',
@@ -123,7 +124,7 @@ const en: MessageSchema = {
   news: {
     eyebrow: 'NEWS',
     title: 'News',
-    searchPlaceholder: 'Keyword, e.g. 補助, 講習',
+    searchPlaceholder: 'Keyword, e.g. subsidy, training',
     searchLabel: 'Search news',
     summary: '{count} items · Page {page} / {total}',
     empty: 'No matching news.',
@@ -153,7 +154,7 @@ const en: MessageSchema = {
     eyebrow: 'CERTIFIED OPERATORS',
     title: 'Certified Operators',
     lead: 'Select a category to view its certified operators.',
-    searchPlaceholder: 'Keyword, e.g. 有機, 水產',
+    searchPlaceholder: 'Keyword, e.g. organic, aquaculture',
     searchLabel: 'Filter categories',
     viewList: 'View list ↗',
     empty: 'No matching categories.',

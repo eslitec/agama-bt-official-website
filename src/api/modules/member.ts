@@ -1,4 +1,4 @@
-import type { LoginPayload, MemberUser, RegisterPayload } from '@/types/models'
+import type { LoginPayload, MemberUser, RegisterCategory, RegisterPayload } from '@/types/models'
 import { ApiError, fromStatic, hasBackend, http } from '@/api/http'
 
 /**
@@ -12,10 +12,27 @@ export const isDemoMember = (): boolean =>
 const unavailable = (): Promise<never> =>
   Promise.reject(new ApiError('Member service is not available', 503, 'MEMBER_UNAVAILABLE'))
 
-export const fetchRegisterCategories = async (): Promise<string[]> =>
-  hasBackend()
-    ? http.get<string[]>('/member/register-categories').then((r) => r.data)
-    : fromStatic((await import('@/api/data/register.data')).registerCategoriesData)
+/** 後端可回傳中文值陣列，或含英文名稱的 { value, labelEn } 陣列 */
+export const toRegisterCategories = (
+  list: (string | RegisterCategory)[],
+  labelsEn: Record<string, string> = {},
+): RegisterCategory[] =>
+  list.map((c) => {
+    const { value, labelEn } = typeof c === 'string' ? { value: c, labelEn: undefined } : c
+    const en = (labelEn ?? labelsEn[value])?.trim()
+    return en ? { value, labelEn: en } : { value }
+  })
+
+export const fetchRegisterCategories = async (): Promise<RegisterCategory[]> => {
+  if (hasBackend()) {
+    return http
+      .get<(string | RegisterCategory)[]>('/member/register-categories')
+      .then((r) => toRegisterCategories(r.data))
+  }
+  const { registerCategoriesData, registerCategoryLabelsEn } =
+    await import('@/api/data/register.data')
+  return fromStatic(toRegisterCategories(registerCategoriesData, registerCategoryLabelsEn))
+}
 
 export const login = (payload: LoginPayload): Promise<MemberUser> => {
   if (hasBackend()) return http.post<MemberUser>('/member/login', payload).then((r) => r.data)

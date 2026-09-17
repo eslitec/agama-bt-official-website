@@ -6,11 +6,13 @@ import MIcon from '@/components/common/MIcon.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
+import { useLocalized } from '@/composables/useLocalized'
 import { fetchUnits } from '@/api'
 
 const props = defineProps<{ cid: number }>()
 
 const { t, tm, rt } = useI18n()
+const { pick, langOf } = useLocalized()
 const { data: units, loading, error, reload } = useAsyncData(fetchUnits, [])
 const unit = computed(() => units.value.find((u) => u.cid === props.cid))
 const tips = computed(() => (tm('unitDetail.tips') as unknown as string[]).map((v) => rt(v)))
@@ -30,9 +32,10 @@ const host = (url: string): string => {
       template(v-if="unit")
         PageHeading(
           :eyebrow="t('unit.eyebrow')"
-          :title="unit.name"
-          :lead="unit.desc"
-          content-lang="zh-Hant-TW"
+          :title="pick(unit.name, unit.nameEn)"
+          :lead="pick(unit.desc, unit.descEn)"
+          :content-lang="langOf(unit.nameEn)"
+          :lead-lang="langOf(unit.descEn)"
         )
           template(#before)
             RouterLink.text-link.unit-back(:to="{ name: 'unit' }") {{ t('unitDetail.back') }}
@@ -45,7 +48,7 @@ const host = (url: string): string => {
             dl.portal-card__meta
               dt {{ t('unitDetail.portalLabel') }}
               dd
-                strong(lang="zh-Hant-TW") {{ unit.portal }}
+                strong(:lang="langOf(unit.portalEn)") {{ pick(unit.portal, unit.portalEn) }}
                 span.portal-card__host {{ host(unit.portalUrl) }}
             ul.portal-card__tips
               li(v-for="tip in tips" :key="tip") {{ tip }}

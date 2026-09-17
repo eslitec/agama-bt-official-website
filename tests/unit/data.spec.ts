@@ -4,7 +4,8 @@ import { downloadGroupsData, quickFilesData } from '@/api/data/downloads.data'
 import { unitsData } from '@/api/data/units.data'
 import { stepsData } from '@/api/data/steps.data'
 import { linksData } from '@/api/data/links.data'
-import { fetchNewsById, fetchNewsList } from '@/api'
+import { fetchNewsById, fetchNewsList, memberApi } from '@/api'
+import { registerCategoriesData } from '@/api/data/register.data'
 
 describe('內建資料（由設計稿抽出）', () => {
   it('筆數與設計稿一致', () => {
@@ -39,5 +40,25 @@ describe('api modules（未設定後端時）', () => {
   it('依 id 取得單則消息', async () => {
     expect((await fetchNewsById(714))?.src).toBe('農業部漁業署')
     expect(await fetchNewsById(1)).toBeUndefined()
+  })
+})
+
+describe('註冊類別', () => {
+  it('送出值為中文，英文名稱有對照時才帶 labelEn', async () => {
+    const list = await memberApi.fetchRegisterCategories()
+    expect(list.map((c) => c.value)).toEqual(registerCategoriesData)
+    expect(
+      memberApi.toRegisterCategories(
+        ['有機作物', { value: '產銷履歷農糧產品', labelEn: 'TAP' }, '其他'],
+        {
+          有機作物: 'Organic crops',
+          其他: ' ',
+        },
+      ),
+    ).toEqual([
+      { value: '有機作物', labelEn: 'Organic crops' },
+      { value: '產銷履歷農糧產品', labelEn: 'TAP' },
+      { value: '其他' },
+    ])
   })
 })

@@ -3,9 +3,11 @@ import { useI18n } from 'vue-i18n'
 import PageHeading from '@/components/common/PageHeading.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
+import { useLocalized } from '@/composables/useLocalized'
 import { fetchLinks } from '@/api'
 
 const { t } = useI18n()
+const { pick, langOf } = useLocalized()
 const { data: links, loading, error, reload } = useAsyncData(fetchLinks, [])
 </script>
 
@@ -18,7 +20,7 @@ const { data: links, loading, error, reload } = useAsyncData(fetchLinks, [])
         li(v-for="l in links" :key="l.n")
           a.link-card(:href="l.href" target="_blank" rel="noopener")
             span.link-card__num {{ l.n }}
-            span.link-card__name(lang="zh-Hant-TW") {{ l.name }}
+            span.link-card__name(:lang="langOf(l.nameEn)") {{ pick(l.name, l.nameEn) }}
             span.link-card__arrow(aria-hidden="true") ↗
             span.visually-hidden {{ t('common.externalLink') }}
 </template>

@@ -5,6 +5,7 @@ import InfoPanel from '@/components/common/InfoPanel.vue'
 import FormField from '@/components/common/FormField.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
 import { useFormErrors } from '@/composables/useFormErrors'
+import { useLocalized } from '@/composables/useLocalized'
 import { memberApi } from '@/api'
 import { ApiError } from '@/api/http'
 import type { RegisterPayload } from '@/types/models'
@@ -21,6 +22,8 @@ import {
 type TextField = 'operatorName' | 'taxId' | 'owner' | 'contact' | 'phone' | 'email' | 'address'
 
 const { t, tm, rt } = useI18n()
+const { pick, langOf } = useLocalized()
+// 類別選項：英文介面顯示英文名稱，送出的值一律是中文
 const { data: categories } = useAsyncData(memberApi.fetchRegisterCategories, [])
 const demo = memberApi.isDemoMember()
 
@@ -199,13 +202,13 @@ function reset(): void {
             button.chip(
               v-for="(c, i) in categories"
               :id="`reg-cat-${i}`"
-              :key="c"
+              :key="c.value"
               type="button"
-              :class="{ 'is-on': form.categories.includes(c) }"
-              :aria-pressed="form.categories.includes(c)"
-              lang="zh-Hant-TW"
-              @click="toggleCategory(c)"
-            ) {{ c }}
+              :class="{ 'is-on': form.categories.includes(c.value) }"
+              :aria-pressed="form.categories.includes(c.value)"
+              :lang="langOf(c.labelEn)"
+              @click="toggleCategory(c.value)"
+            ) {{ pick(c.value, c.labelEn) }}
           p#reg-cat-error.reg-form__group-error(v-if="errors.categories") {{ errors.categories }}
 
         fieldset.reg-form__section

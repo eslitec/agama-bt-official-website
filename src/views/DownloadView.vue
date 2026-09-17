@@ -4,9 +4,11 @@ import PageHeading from '@/components/common/PageHeading.vue'
 import FileLink from '@/components/common/FileLink.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
+import { useLocalized } from '@/composables/useLocalized'
 import { fetchDownloadGroups } from '@/api'
 
 const { t } = useI18n()
+const { pick, langOf } = useLocalized()
 const { data: groups, loading, error, reload } = useAsyncData(fetchDownloadGroups, [])
 </script>
 
@@ -24,7 +26,8 @@ const { data: groups, loading, error, reload } = useAsyncData(fetchDownloadGroup
         )
           header.download-group__head
             span.download-group__num {{ g.n }}
-            h2.download-group__title(:id="`dl-${g.n}`" lang="zh-Hant-TW") {{ g.title }}
+            h2.download-group__title(:id="`dl-${g.n}`" :lang="langOf(g.titleEn)")
+              | {{ pick(g.title, g.titleEn) }}
             span.download-group__rule(aria-hidden="true")
           .download-group__files
             FileLink(
