@@ -1,0 +1,36 @@
+# Netlify 部署設定（Build command、Publish directory 以此檔為準，後台不用另外填）
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # 專案需要 Node 20.19 以上
+  NODE_VERSION = "22"
+
+# 預覽部署（PR）與分支部署一律不讓搜尋引擎收錄
+[context.deploy-preview.environment]
+  VITE_NOINDEX = "true"
+
+[context.branch-deploy.environment]
+  VITE_NOINDEX = "true"
+
+# 單頁應用：找不到實體檔案的網址一律交給 index.html（/news/712 重新整理不會 404）。
+# 實體檔案（/assets/*、/robots.txt、/forms/contact.html）存在時 Netlify 會直接回傳，不受影響。
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# 打包檔名含雜湊，可長期快取
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"

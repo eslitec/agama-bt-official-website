@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>意見反應表單</title>
+  </head>
+  <body>
+    <!--
+      Netlify Forms 偵測用的靜態表單，訪客看不到（網站實際表單在 /contact）。
+      欄位名稱必須與 src/api/modules/contact.ts 的 CONTACT_FIELDS 一致，
+      新增或改名欄位時兩邊要一起改（tests/unit/contact.spec.ts 會檢查）。
+    -->
+    <form name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
+      <input type="hidden" name="form-name" value="contact" />
+      <input name="bot-field" />
+      <input name="topic" />
+      <input name="name" />
+      <input name="organization" />
+      <input name="phone" />
+      <input name="email" type="email" />
+      <input name="subject" />
+      <textarea name="message"></textarea>
+      <input name="privacy" />
+      <input name="locale" />
+    </form>
+  </body>
+</html>

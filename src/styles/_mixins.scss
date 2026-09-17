@@ -1,0 +1,66 @@
+@use 'sass:map';
+@use 'tokens' as *;
+
+$_bps: (
+  sm: $bp-sm,
+  md: $bp-md,
+  lg: $bp-lg,
+  xl: $bp-xl,
+);
+
+/// 小於指定斷點
+@mixin below($bp) {
+  @media (max-width: #{map.get($_bps, $bp) - 0.02px}) {
+    @content;
+  }
+}
+
+/// 大於等於指定斷點
+@mixin above($bp) {
+  @media (min-width: map.get($_bps, $bp)) {
+    @content;
+  }
+}
+
+/// 自動換欄格線（手機時不超出螢幕）
+@mixin auto-grid($min, $gap) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(#{$min}, 100%), 1fr));
+  gap: $gap;
+}
+
+@mixin eyebrow {
+  font-family: $f-display;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: $c-primary;
+}
+
+@mixin focus-ring($color: $c-primary) {
+  &:focus-visible {
+    outline: 2px solid $color;
+    outline-offset: 2px;
+  }
+}
+
+/// 以 button 元素呈現連結樣式時的重置
+@mixin button-reset {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+@mixin hover {
+  @media (hover: hover) {
+    &:hover {
+      @content;
+    }
+  }
+}

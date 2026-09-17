@@ -1,0 +1,413 @@
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 90px;
+}
+
+body {
+  margin: 0;
+  background: $c-paper;
+  color: $c-ink;
+  font-family: $f-sans;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  @include focus-ring;
+  @include hover {
+    color: $c-primary;
+  }
+}
+
+button {
+  @include focus-ring;
+}
+
+input,
+button,
+textarea,
+select {
+  font-family: $f-sans;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ─── 版面容器 ─────────────────────────────────────
+.l-section {
+  display: flex;
+  justify-content: center;
+  padding-inline: $gutter;
+}
+
+.l-container {
+  width: 100%;
+  max-width: $container;
+
+  &--narrow {
+    max-width: $container-narrow;
+  }
+}
+
+// ─── 進場動畫（v-reveal）────────────────────────────
+.reveal {
+  transition:
+    opacity 0.7s $ease-out,
+    transform 0.7s $ease-out,
+    clip-path 1s $ease-out;
+  transition-delay: var(--reveal-delay, 0ms);
+
+  &--fade-up {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+
+  &--fade-right {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+
+  &--clip {
+    opacity: 0.55;
+    clip-path: inset(0 0 12% 0);
+  }
+
+  &.is-revealed {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
+  }
+}
+
+// ─── 共用小元件 ───────────────────────────────────
+.text-link {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: $c-primary;
+  cursor: pointer;
+  @include focus-ring;
+  @include hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 100;
+  background: $c-ink;
+  color: $c-paper;
+  padding: 10px 16px;
+  font-size: 14px;
+
+  &:focus {
+    top: 12px;
+    color: $c-paper;
+  }
+}
+
+.btn {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s,
+    filter 0.2s;
+  @include focus-ring;
+
+  &--primary {
+    background: $c-primary;
+    color: $c-paper;
+    @include hover {
+      color: $c-paper;
+      background: $c-primary-dark;
+    }
+  }
+
+  &--outline {
+    border: 1px solid $c-primary;
+    color: $c-primary;
+    @include hover {
+      background: $c-primary;
+      color: $c-paper;
+    }
+  }
+
+  &--block {
+    display: flex;
+    width: 100%;
+  }
+
+  &--lg {
+    padding: 16px;
+    font-size: 16px;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  &__label {
+    font-size: 13px;
+    font-weight: 700;
+    color: $c-text;
+  }
+
+  &__control {
+    display: flex;
+    align-items: center;
+    border: 1px solid $c-line-2;
+    background: $c-input-bg;
+    transition: border-color 0.2s;
+
+    &:focus-within {
+      border-color: $c-primary;
+    }
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    padding: 13px 15px;
+    font-size: 15px;
+    color: $c-ink;
+    outline: 0;
+
+    &::placeholder {
+      color: #8c9a9c;
+    }
+  }
+
+  &__required {
+    margin-left: 4px;
+    color: $c-danger;
+    font-weight: 400;
+  }
+
+  &__error {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: $c-danger;
+  }
+
+  &.is-invalid &__control {
+    border-color: $c-danger;
+    background: $c-danger-bg;
+  }
+
+  &__addon {
+    @include button-reset;
+    padding: 0 14px;
+    align-self: stretch;
+    font-size: 13px;
+    color: $c-primary;
+    white-space: nowrap;
+    @include focus-ring;
+  }
+}
+
+// ─── 內頁骨架 ─────────────────────────────────────
+.page {
+  padding-bottom: 72px;
+
+  &__inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--page-gap, 28px);
+  }
+}
+
+// ─── 勾選框（原生 input 保留給鍵盤與螢幕閱讀器）──────
+.checkbox {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 24px;
+  color: $c-text;
+  cursor: pointer;
+
+  &__input {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  &__box {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+    border: 1px solid $c-check-border;
+    background: $c-white;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
+  }
+
+  &__input:checked + &__box {
+    background: $c-primary;
+    border-color: $c-primary;
+
+    &::after {
+      content: '';
+      width: 10px;
+      height: 5px;
+      border-left: 2px solid $c-paper;
+      border-bottom: 2px solid $c-paper;
+      transform: translateY(-1px) rotate(-45deg);
+    }
+  }
+
+  &__input:focus-visible + &__box {
+    outline: 2px solid $c-primary;
+    outline-offset: 2px;
+  }
+
+  &.is-invalid &__box {
+    border-color: $c-danger;
+  }
+
+  &__text {
+    font-size: 13px;
+    line-height: 1.85;
+
+    a {
+      color: $c-primary;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+  }
+}
+
+// ─── 表單訊息 ─────────────────────────────────────
+.form-alert {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 4px solid $c-danger;
+  background: $c-danger-bg;
+  font-size: 14px;
+  line-height: 1.7;
+  color: $c-danger;
+
+  &--info {
+    border-color: $c-warn;
+    background: #fbf5e6;
+    color: #6b5316;
+  }
+
+  &--success {
+    border-color: $c-primary;
+    background: #e8f3f3;
+    color: $c-primary-dark;
+  }
+
+  a {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+  }
+}
+
+// ── 項目符號清單（中文用「・」，英文用「•」）──
+.dot-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  > li {
+    position: relative;
+    padding-left: 1.1em;
+
+    &::before {
+      content: '・';
+      position: absolute;
+      left: -0.15em;
+    }
+  }
+}
+
+html:lang(en) .dot-list > li::before {
+  content: '•';
+  left: 0.2em;
+}
+
+.pre-line {
+  white-space: pre-line;
+}
