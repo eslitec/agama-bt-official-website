@@ -1,0 +1,58 @@
+# 推送到 main（或在 Actions 頁手動執行）時，建置網站並部署到 GitHub Pages。
+# 第一次使用：repo 的 Settings → Pages → Build and deployment → Source 選「GitHub Actions」。
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: 單元測試
+        run: npm run test
+
+      - name: 建置
+        run: npm run build
+        env:
+          # 網址是 https://<帳號>.github.io/<repo 名稱>/，所以根路徑是 /<repo 名稱>/；
+          # 之後改用自訂網域時改成 /
+          VITE_BASE: /${{ github.event.repository.name }}/
+          # 管理者後台 API（apps-script/admin-api.gs 部署的網頁應用程式）
+          VITE_ADMIN_API_URL: https://script.google.com/macros/s/AKfycbxRniu8Cn0mt28CYfADBLWZhB1rcnbN_3bRD2PQu1GTtjH6hzNNK0PzrOYwihGKkZUq/exec
+          # 正式網址確定後設定 VITE_SITE_URL（會開始讓搜尋引擎收錄）；未設定時整站不收錄
+          VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

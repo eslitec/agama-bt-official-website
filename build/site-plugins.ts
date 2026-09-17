@@ -138,3 +138,24 @@ export function noindexOutput(noindex: boolean): Plugin {
     },
   }
 }
+
+/**
+ * 靜態主機（GitHub Pages）沒有「找不到檔案時回傳 index.html」的設定：
+ * 輸出一份相同的 404.html，直接開啟 /news/712 等網址或重新整理時仍能載入網站；
+ * .nojekyll 讓 GitHub Pages 不經 Jekyll 處理（保留底線開頭的檔案）。
+ * Netlify、Apache、IIS、Nginx 有自己的轉址設定，多這兩個檔案沒有影響。
+ */
+export function spaFallback(): Plugin {
+  return {
+    name: 'site:spa-fallback',
+    apply: 'build',
+    enforce: 'post',
+    generateBundle(_options, bundle) {
+      const index = bundle['index.html']
+      if (index && index.type === 'asset') {
+        this.emitFile({ type: 'asset', fileName: '404.html', source: index.source })
+      }
+      this.emitFile({ type: 'asset', fileName: '.nojekyll', source: '' })
+    },
+  }
+}

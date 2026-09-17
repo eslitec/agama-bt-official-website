@@ -2,7 +2,7 @@
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { noindexOutput, sitemap, woff2Only } from './build/site-plugins'
+import { noindexOutput, sitemap, spaFallback, woff2Only } from './build/site-plugins'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
 
@@ -12,11 +12,14 @@ export default defineConfig(({ mode }) => {
   const noindex = env.VITE_NOINDEX === 'true' || !env.VITE_SITE_URL
 
   return {
+    // 網站放在子路徑時設定（例如 GitHub Pages 的 /agama-bt-official-website/），結尾要有 /
+    base: env.VITE_BASE || '/',
     plugins: [
       vue(),
       woff2Only(),
       sitemap({ siteUrl: env.VITE_SITE_URL, root, noindex, sheetKey: env.VITE_CONTENT_SHEET_KEY }),
       noindexOutput(noindex),
+      spaFallback(),
     ],
     resolve: {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

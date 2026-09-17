@@ -8,7 +8,7 @@ import { ApiError, fromStatic, hasBackend, http } from '@/api/http'
  * - 開發環境（npm run dev）：沒有 Netlify，只模擬送出成功。
  */
 export const CONTACT_FORM_NAME = 'contact'
-export const CONTACT_ENDPOINT = '/forms/contact.html'
+export const CONTACT_ENDPOINT = `${import.meta.env.BASE_URL}forms/contact.html`
 export const CONTACT_FIELDS = [
   'topic',
   'name',

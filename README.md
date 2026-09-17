@@ -88,6 +88,18 @@ npm run test        # Vitest
    - 偵測用的靜態表單在 `public/forms/contact.html`，欄位要和 `src/api/modules/contact.ts` 的 `CONTACT_FIELDS` 一致（`tests/unit/contact.spec.ts` 會檢查）。
    - `npm run dev` 時只模擬送出；部署到 Netlify 以外的主機時表單會送出失敗，需改接後端（設定 `VITE_API_BASE_URL` 後改 POST `/contact`）。
 
+### GitHub Pages
+
+repo：<https://github.com/eslitec/agama-bt-official-website>，網址：<https://eslitec.github.io/agama-bt-official-website/>。
+
+- `.github/workflows/deploy-pages.yml`：推送到 `main`（或在 Actions 頁手動執行）時自動跑單元測試、建置並部署。
+- **第一次**：repo 的 **Settings → Pages → Build and deployment → Source** 選「**GitHub Actions**」，再到 **Actions** 重新執行一次失敗的部署。私人 repo 要開 Pages 需要組織是付費方案，否則 repo 要改公開。
+- 網址在子路徑 `/<repo 名稱>/`，建置時由 `VITE_BASE` 設定根路徑（workflow 已自動帶入）。之後改用自訂網域時，把 `VITE_BASE` 改成 `/`。
+- GitHub Pages 沒有轉址設定，建置時輸出一份與 `index.html` 相同的 `404.html`，直接開啟 `/news/712` 等網址或重新整理都能正常顯示（HTTP 狀態碼會是 404，瀏覽器顯示不受影響）。
+- 管理者後台 API 網址寫在 workflow 的 `VITE_ADMIN_API_URL`；正式網址確定後，在 repo **Settings → Secrets and variables → Actions → Variables** 新增 `VITE_SITE_URL` 才會開始讓搜尋引擎收錄。
+- **限制**：「意見反應」表單使用 Netlify Forms，放在 GitHub Pages 時**送不出去**（需改接其他收件方式）。
+- 本機推送：雙擊 `push-github.bat`（需安裝 Git for Windows；第一次會跳出 GitHub 登入視窗）。
+
 ### 其他主機
 
 使用 History 模式網址（例如 `/news/712`），伺服器必須把找不到實體檔案的路徑導回 `index.html`，否則重新整理會 404：
