@@ -11,6 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_DEMO_MEMBER?: string
   /** 設為 true 時整站不讓搜尋引擎收錄（未設定 VITE_SITE_URL 時也會自動不收錄） */
   readonly VITE_NOINDEX?: string
+  /** 內容試算表發布到網路的金鑰（2PACX-…）；設為 off 只用內建資料 */
+  readonly VITE_CONTENT_SHEET_KEY?: string
 }
 
 interface ImportMeta {

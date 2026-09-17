@@ -1,4 +1,4 @@
-/* 由設計稿《成大智研官網.dc.html》抽出之內建資料。接上後端後可移除。 */
+/* 內建備援資料（搬到 Google 試算表當下的快照）：試算表讀取失敗時才使用，平常請改試算表，不用改這裡。 */
 import type { Farm } from '@/types/models'
 
 export const farmsData: Farm[] = [

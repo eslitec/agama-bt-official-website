@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs'
 import type { Plugin } from 'vite'
+import { CONTENT_SHEET, sheetCsvUrl } from '../src/config/content-sheet'
+import { csvToRecords } from '../src/utils/csv'
 
 /**
  * @fontsource 的 CSS 同時提供 woff2 與 woff；現代瀏覽器都支援 woff2，
@@ -26,12 +28,34 @@ const readIds = (file: string, field: string): number[] =>
  * sitemap 需要絕對網址，須設定 VITE_SITE_URL；未設定時只產生 robots.txt 並提示。
  * noindex 時 robots.txt 禁止所有爬蟲，也不產生 sitemap。
  */
-export function sitemap(options: { siteUrl?: string; root: string; noindex?: boolean }): Plugin {
+/** 從內容試算表讀消息 ID（建置時）；讀不到回傳 null，改用內建資料 */
+async function sheetNewsIds(key: string): Promise<number[] | null> {
+  if (!key || key === 'off') return null
+  try {
+    const res = await fetch(sheetCsvUrl('news', key), { signal: AbortSignal.timeout(15000) })
+    if (!res.ok) return null
+    const ids = csvToRecords(await res.text())
+      .filter((r) => !/^(n|no|否|0)$/i.test(r['顯示'] ?? ''))
+      .map((r) => Number.parseInt(r['ID'] ?? '', 10))
+      .filter(Number.isFinite)
+    return ids.length ? [...new Set(ids)] : null
+  } catch {
+    return null
+  }
+}
+
+export function sitemap(options: {
+  siteUrl?: string
+  root: string
+  noindex?: boolean
+  /** 內容試算表金鑰；未設定用預設值，off 停用 */
+  sheetKey?: string
+}): Plugin {
   const base = (options.siteUrl ?? '').replace(/\/+$/, '')
   return {
     name: 'site:sitemap',
     apply: 'build',
-    generateBundle() {
+    async generateBundle() {
       const staticPaths = [
         '/',
         '/about',
@@ -46,7 +70,12 @@ export function sitemap(options: { siteUrl?: string; root: string; noindex?: boo
         '/contact',
         '/privacy',
       ]
-      const newsIds = readIds(`${options.root}/src/api/data/news.data.ts`, 'id')
+      const fromSheet = options.noindex
+        ? null
+        : await sheetNewsIds(options.sheetKey?.trim() || CONTENT_SHEET.defaultKey)
+      if (!options.noindex && !fromSheet)
+        this.warn('讀不到內容試算表，sitemap 的消息網址改用內建資料')
+      const newsIds = fromSheet ?? readIds(`${options.root}/src/api/data/news.data.ts`, 'id')
       const unitIds = readIds(`${options.root}/src/api/data/units.data.ts`, 'cid')
       const paths = [
         ...staticPaths,

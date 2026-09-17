@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       vue(),
       woff2Only(),
-      sitemap({ siteUrl: env.VITE_SITE_URL, root, noindex }),
+      sitemap({ siteUrl: env.VITE_SITE_URL, root, noindex, sheetKey: env.VITE_CONTENT_SHEET_KEY }),
       noindexOutput(noindex),
     ],
     resolve: {

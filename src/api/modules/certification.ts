@@ -1,5 +1,7 @@
 import type { FeeDoc, ProcessStep } from '@/types/models'
 import { fromStatic, hasBackend, http } from '@/api/http'
+import { fromSheet } from '@/api/sheet'
+import { toFeeDocs } from '@/api/sheet-mappers'
 
 export const fetchProcessSteps = async (): Promise<ProcessStep[]> =>
   hasBackend()
@@ -9,4 +11,6 @@ export const fetchProcessSteps = async (): Promise<ProcessStep[]> =>
 export const fetchFeeDocs = async (): Promise<FeeDoc[]> =>
   hasBackend()
     ? http.get<FeeDoc[]>('/certification/fees').then((r) => r.data)
-    : fromStatic((await import('@/api/data/fees.data')).feesData)
+    : fromSheet('fees', toFeeDocs, async () =>
+        fromStatic((await import('@/api/data/fees.data')).feesData),
+      )

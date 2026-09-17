@@ -19,7 +19,8 @@ export interface NewsItem {
   imgs?: string[]
 }
 
-export type FileExt = 'DOC' | 'DOCX' | 'PDF' | 'WORD'
+/** 檔案格式（DOC、DOCX、PDF…，試算表可自由填寫） */
+export type FileExt = string
 
 export interface DownloadFile {
   name: string
