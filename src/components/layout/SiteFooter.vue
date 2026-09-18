@@ -6,14 +6,14 @@ const { t } = useI18n()
 
 <template lang="pug">
 footer.site-footer
-  .l-container
+  .l-container.site-footer__inner
+    .site-footer__brand
+      strong.site-footer__company {{ t('site.company') }}
+      address.site-footer__text
+        | {{ t('site.address') }}
+        br
+        | {{ t('site.values') }}
     .site-footer__grid
-      .site-footer__col
-        strong.site-footer__company {{ t('site.company') }}
-        address.site-footer__text
-          | {{ t('site.address') }}
-          br
-          | {{ t('site.values') }}
       nav.site-footer__col(:aria-label="t('footer.certification')")
         span.site-footer__label {{ t('footer.certification') }}
         RouterLink(:to="{ name: 'how' }") {{ t('nav.how') }}
@@ -41,8 +41,28 @@ footer.site-footer
   background: $c-primary-dark;
   color: $c-on-dark-5;
 
+  &__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  &__brand {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    font-size: 13px;
+  }
+
+  // 三個連結區塊平分一列，窄螢幕改成兩欄、手機一欄
   &__grid {
-    @include auto-grid(240px, 24px);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+
+    @include below(sm) {
+      grid-template-columns: 1fr;
+    }
   }
 
   &__col {
