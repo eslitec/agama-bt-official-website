@@ -217,15 +217,6 @@ const en: MessageSchema = {
     setupCodePlaceholder: '12 letters and digits',
     setupSubmit: 'Create account and log in',
     setupSubmitting: 'Creating…',
-    asideTitle: 'What administrators can do',
-    features: [
-      'Add, edit and delete news',
-      'Show or hide news on the website',
-      'Change passwords and manage administrator accounts',
-    ],
-    publishTitle: 'When changes appear',
-    publishBody:
-      'Changes are written to the content spreadsheet immediately; the public site updates within about 5 minutes (Google publishing cache).',
     forgotTitle: 'Forgot your password?',
     forgotBody:
       'Ask another administrator to delete and re-create your account under Account settings.',

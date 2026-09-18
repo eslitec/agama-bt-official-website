@@ -2,7 +2,6 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import InfoPanel from '@/components/common/InfoPanel.vue'
 import FormField from '@/components/common/FormField.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useFormErrors } from '@/composables/useFormErrors'
@@ -13,7 +12,7 @@ import { isAdminPassword, isAdminUsername, isBlank } from '@/utils/validators'
 import { media } from '@/utils/media'
 import { safeRedirect } from '@/utils/redirect'
 
-const { t, tm, rt } = useI18n()
+const { t } = useI18n()
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -24,7 +23,6 @@ const mock = adminApi.isAdminMock()
 // 模擬後台的示範帳號（只在開發環境打包，與 src/api/admin-mock.ts 的 MOCK_ADMIN 相同）
 const demoAccount = import.meta.env.DEV ? { username: 'admin', password: 'admin12345' } : {}
 const expired = computed(() => route.query.expired === '1')
-const features = (): string[] => (tm('login.features') as unknown as string[]).map((v) => rt(v))
 
 /** login：一般登入；setup：尚無管理者時的初次設定 */
 const mode = ref<'login' | 'setup'>('login')
@@ -223,13 +221,6 @@ const asideImage = {
 
     aside.login__aside
       span.login__image(:style="asideImage" aria-hidden="true")
-      InfoPanel(:title="t('login.asideTitle')" size="lg")
-        ul.dot-list
-          li(v-for="f in features()" :key="f") {{ f }}
-      InfoPanel(:title="t('login.publishTitle')" tone="card")
-        p {{ t('login.publishBody') }}
-      InfoPanel(:title="t('login.forgotTitle')" tone="card")
-        p {{ t('login.forgotBody') }}
 </template>
 
 <style scoped lang="scss">
@@ -241,11 +232,12 @@ const asideImage = {
   &__aside {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    align-self: stretch;
   }
 
   &__image {
-    min-height: 200px;
+    flex: 1;
+    min-height: 220px;
     background-size: cover;
     background-position: center;
   }
