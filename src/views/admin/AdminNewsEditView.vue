@@ -401,7 +401,6 @@ section.news-edit
         span.checkbox__text {{ t('admin.news.fields.visible') }}
       p.news-edit__hint {{ t('admin.news.fields.visibleHint') }}
 
-    p.form-alert.form-alert--info {{ t('admin.publishNote') }}
     .news-edit__actions
       button.btn.btn--primary(type="submit" :disabled="saving")
         | {{ saving ? t('admin.news.saving') : t('admin.news.save') }}

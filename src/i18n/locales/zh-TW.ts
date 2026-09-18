@@ -219,7 +219,6 @@ const zhTW = {
     tabNews: '最新消息',
     tabAccount: '帳號設定',
     signedInAs: '登入帳號：{name}',
-    publishNote: '變更會立即寫入內容試算表，公開網站約 5 分鐘內更新（Google 發布快取）。',
     cancel: '取消',
     errors: {
       network: '無法連線到後台，請檢查網路後再試。',

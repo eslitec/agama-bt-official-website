@@ -228,8 +228,6 @@ const en: MessageSchema = {
     tabNews: 'News',
     tabAccount: 'Account',
     signedInAs: 'Signed in as {name}',
-    publishNote:
-      'Changes are saved to the content spreadsheet immediately; the public site updates within about 5 minutes (Google publishing cache).',
     cancel: 'Cancel',
     errors: {
       network: 'Cannot reach the admin service. Check your connection and try again.',

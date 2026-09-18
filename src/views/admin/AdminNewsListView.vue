@@ -84,7 +84,6 @@ section.admin-list
     RouterLink.btn.btn--primary(:to="{ name: 'adminNewsNew' }")
       MIcon(name="add" :size="18")
       | {{ t('admin.news.add') }}
-  p.form-alert.form-alert--info {{ t('admin.publishNote') }}
   p.form-alert.form-alert--success(v-if="notice" role="status") {{ notice }}
 
   .admin-list__toolbar
