@@ -114,10 +114,12 @@ header.site-header(:class="headerClass")
             :class="{ 'is-active': activeKey === key }"
             :aria-current="activeKey === key ? 'page' : undefined"
           ) {{ t(`nav.${key}`) }}
-      //- 一般訪客不需要登入；管理者登入入口在頁尾
       .site-header__admin(v-if="isLoggedIn")
         RouterLink.site-header__login(:to="{ name: 'adminNews' }") {{ t('nav.admin') }}
         button.site-header__logout(type="button" @click="onLogout") {{ t('nav.logout') }}
+      //- 未登入時顯示管理者登入入口（頁尾也有一個）
+      .site-header__admin(v-else)
+        RouterLink.site-header__login(:to="{ name: 'login' }" rel="nofollow") {{ t('footer.adminLogin') }}
 </template>
 
 <style scoped lang="scss">
