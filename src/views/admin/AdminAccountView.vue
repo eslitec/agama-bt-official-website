@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import FormField from '@/components/common/FormField.vue'
+import MIcon from '@/components/common/MIcon.vue'
 import InfoPanel from '@/components/common/InfoPanel.vue'
 import ConfirmDialog from '@/components/admin/ConfirmDialog.vue'
 import { adminApi } from '@/api'
@@ -14,6 +15,12 @@ import type { AdminAccount } from '@/types/models'
 const { t, locale } = useI18n()
 const auth = useAuthStore()
 const { run, messageOf } = useAdminRequest()
+
+/** 各密碼欄位是否顯示明碼（眼睛按鈕） */
+const shown = reactive<Record<string, boolean>>({})
+const toggleShown = (key: string): void => {
+  shown[key] = !shown[key]
+}
 
 const aria = (error: string, id: string) =>
   error ? { 'aria-invalid': 'true' as const, 'aria-describedby': `${id}-error` } : {}
@@ -174,9 +181,17 @@ section.account
           :id="pwIds.current"
           v-model="pw.current"
           v-bind="aria(pwRules.errors.current, pwIds.current)"
-          type="password"
+          :type="shown.current ? 'text' : 'password'"
           autocomplete="current-password"
         )
+        button.field__addon.field__addon--icon(
+          type="button"
+          :aria-controls="pwIds.current"
+          :aria-pressed="!!shown.current"
+          :aria-label="shown.current ? t('login.hidePassword') : t('login.showPassword')"
+          @click="toggleShown('current')"
+        )
+          MIcon(:name="shown.current ? 'visibility_off' : 'visibility'" :size="20")
       FormField(
         :id="pwIds.next"
         :label="t('admin.account.newPassword')"
@@ -187,10 +202,18 @@ section.account
           :id="pwIds.next"
           v-model="pw.next"
           v-bind="aria(pwRules.errors.next, pwIds.next)"
-          type="password"
+          :type="shown.next ? 'text' : 'password'"
           autocomplete="new-password"
           :placeholder="t('login.passwordHint')"
         )
+        button.field__addon.field__addon--icon(
+          type="button"
+          :aria-controls="pwIds.next"
+          :aria-pressed="!!shown.next"
+          :aria-label="shown.next ? t('login.hidePassword') : t('login.showPassword')"
+          @click="toggleShown('next')"
+        )
+          MIcon(:name="shown.next ? 'visibility_off' : 'visibility'" :size="20")
       FormField(
         :id="pwIds.confirm"
         :label="t('admin.account.confirmPassword')"
@@ -201,9 +224,17 @@ section.account
           :id="pwIds.confirm"
           v-model="pw.confirm"
           v-bind="aria(pwRules.errors.confirm, pwIds.confirm)"
-          type="password"
+          :type="shown.confirm ? 'text' : 'password'"
           autocomplete="new-password"
         )
+        button.field__addon.field__addon--icon(
+          type="button"
+          :aria-controls="pwIds.confirm"
+          :aria-pressed="!!shown.confirm"
+          :aria-label="shown.confirm ? t('login.hidePassword') : t('login.showPassword')"
+          @click="toggleShown('confirm')"
+        )
+          MIcon(:name="shown.confirm ? 'visibility_off' : 'visibility'" :size="20")
       button.btn.btn--primary(type="submit" :disabled="pwBusy")
         | {{ pwBusy ? t('admin.account.passwordSubmitting') : t('admin.account.passwordSubmit') }}
 
@@ -261,10 +292,18 @@ section.account
             :id="addIds.password"
             v-model="add.password"
             v-bind="aria(addRules.errors.password, addIds.password)"
-            type="password"
+            :type="shown.addPassword ? 'text' : 'password'"
             autocomplete="new-password"
             :placeholder="t('login.passwordHint')"
           )
+          button.field__addon.field__addon--icon(
+            type="button"
+            :aria-controls="addIds.password"
+            :aria-pressed="!!shown.addPassword"
+            :aria-label="shown.addPassword ? t('login.hidePassword') : t('login.showPassword')"
+            @click="toggleShown('addPassword')"
+          )
+            MIcon(:name="shown.addPassword ? 'visibility_off' : 'visibility'" :size="20")
         FormField(
           :id="addIds.confirm"
           :label="t('login.passwordConfirm')"
@@ -275,9 +314,17 @@ section.account
             :id="addIds.confirm"
             v-model="add.confirm"
             v-bind="aria(addRules.errors.confirm, addIds.confirm)"
-            type="password"
+            :type="shown.addConfirm ? 'text' : 'password'"
             autocomplete="new-password"
           )
+          button.field__addon.field__addon--icon(
+            type="button"
+            :aria-controls="addIds.confirm"
+            :aria-pressed="!!shown.addConfirm"
+            :aria-label="shown.addConfirm ? t('login.hidePassword') : t('login.showPassword')"
+            @click="toggleShown('addConfirm')"
+          )
+            MIcon(:name="shown.addConfirm ? 'visibility_off' : 'visibility'" :size="20")
         button.btn.btn--outline(type="submit" :disabled="addBusy")
           | {{ addBusy ? t('admin.account.adding') : t('admin.account.addSubmit') }}
 

@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import FormField from '@/components/common/FormField.vue'
+import MIcon from '@/components/common/MIcon.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useFormErrors } from '@/composables/useFormErrors'
 import { adminErrorMessage } from '@/composables/useAdmin'
@@ -186,12 +187,14 @@ const asideImage = {
             :placeholder="mode === 'setup' ? t('login.passwordHint') : t('login.passwordPlaceholder')"
             @blur="recheck('password')"
           )
-          button.field__addon(
+          button.field__addon.field__addon--icon(
             type="button"
             :aria-controls="ids.password"
             :aria-pressed="showPw"
+            :aria-label="showPw ? t('login.hidePassword') : t('login.showPassword')"
             @click="showPw = !showPw"
-          ) {{ showPw ? t('login.hidePassword') : t('login.showPassword') }}
+          )
+            MIcon(:name="showPw ? 'visibility_off' : 'visibility'" :size="20")
         FormField(
           v-if="mode === 'setup'"
           :id="ids.passwordConfirm"

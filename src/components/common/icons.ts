@@ -19,6 +19,8 @@ import pictureAsPdf from '@material-symbols/svg-400/rounded/picture_as_pdf-fill.
 import searchOff from '@material-symbols/svg-400/rounded/search_off-fill.svg?raw'
 import setMeal from '@material-symbols/svg-400/rounded/set_meal-fill.svg?raw'
 import travelExplore from '@material-symbols/svg-400/rounded/travel_explore-fill.svg?raw'
+import visibility from '@material-symbols/svg-400/rounded/visibility-fill.svg?raw'
+import visibilityOff from '@material-symbols/svg-400/rounded/visibility_off-fill.svg?raw'
 import zoomIn from '@material-symbols/svg-400/rounded/zoom_in-fill.svg?raw'
 
 const strip = (svg: string): string =>
@@ -42,6 +44,8 @@ const raw = {
   search_off: searchOff,
   set_meal: setMeal,
   travel_explore: travelExplore,
+  visibility,
+  visibility_off: visibilityOff,
   zoom_in: zoomIn,
 }
 
