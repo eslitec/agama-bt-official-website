@@ -92,9 +92,16 @@ const values = computed(() => (tm('about.values') as unknown as string[]).map((v
     display: flex;
     flex-direction: column;
     gap: 4px;
+    min-width: 0;
     padding: 20px;
     border: 1px solid $c-line;
     background: $c-white;
+    // 英文價值名稱較長（例如 Impartiality），窄螢幕才不會撐出格線
+    overflow-wrap: anywhere;
+
+    @include below(sm) {
+      padding: 16px 14px;
+    }
   }
 
   &__value-name {
