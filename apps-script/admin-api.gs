@@ -11,7 +11,7 @@
  * - 管理者帳密存在「指令碼屬性」（不在試算表裡，試算表已公開發布）。
  * - 密碼以隨機 salt + SHA-256 迭代雜湊儲存，不保存明碼。
  * - 登入成功回傳 HMAC-SHA256 簽章的權杖（8 小時有效），之後每個請求都要帶權杖。
- * - 同一帳號連續登入失敗 5 次鎖定 15 分鐘。
+ * - 登入失敗鎖定目前關閉（MAX_FAILS = 0）；要啟用時把 MAX_FAILS 改成 5，連續失敗 5 次會鎖 LOCK_SECONDS 秒。
  * - 寫入試算表使用 LockService 避免同時編輯互相覆蓋。
  *
  * 請求格式：POST，Content-Type: text/plain，內容為 JSON { action, token?, ...參數 }
@@ -22,7 +22,7 @@ var SPREADSHEET_ID = '1I2qpT_Vs0iHJmx46TZGkDwvhLMzi4IFY9O379vbnpmE'
 var NEWS_GID = 40890007
 var TOKEN_TTL_MS = 8 * 60 * 60 * 1000
 var HASH_ROUNDS = 1000
-var MAX_FAILS = 5
+var MAX_FAILS = 0 // 0 = 不限制登入失敗次數（使用者要求）
 var LOCK_SECONDS = 15 * 60
 var SETUP_TTL_MS = 30 * 60 * 1000
 var MIN_PASSWORD = 10
@@ -192,7 +192,7 @@ function login(body) {
   var cache = CacheService.getScriptCache()
   var failKey = 'fail:' + username
   var fails = Number(cache.get(failKey) || 0)
-  if (fails >= MAX_FAILS) throw apiError('LOCKED', '登入失敗次數過多，請 15 分鐘後再試')
+  if (MAX_FAILS > 0 && fails >= MAX_FAILS) throw apiError('LOCKED', '登入失敗次數過多，請 15 分鐘後再試')
   var admin = getAdmins().filter(function (a) { return a.username === username })[0]
   if (!admin || hashPassword(password, admin.salt) !== admin.hash) {
     cache.put(failKey, String(fails + 1), LOCK_SECONDS)
