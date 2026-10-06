@@ -90,11 +90,11 @@ npm run test        # Vitest
 
 ### GitHub Pages
 
-repo：<https://github.com/eslitec/agama-bt-official-website>，網址：<https://eslitec.github.io/agama-bt-official-website/>。
+repo：<https://github.com/eslitec/agama-bt-official-website>，網址：<https://caic-cert.com/>（自訂網域；舊的 github.io 網址會自動轉過來）。
 
 - `.github/workflows/deploy-pages.yml`：推送到 `main`（或在 Actions 頁手動執行）時自動跑單元測試、建置並部署。
-- **第一次**：repo 的 **Settings → Pages → Build and deployment → Source** 選「**GitHub Actions**」，再到 **Actions** 重新執行一次失敗的部署。私人 repo 要開 Pages 需要組織是付費方案，否則 repo 要改公開。
-- 網址在子路徑 `/<repo 名稱>/`，建置時由 `VITE_BASE` 設定根路徑（workflow 已自動帶入）。之後改用自訂網域時，把 `VITE_BASE` 改成 `/`。
+- **第一次**：repo 的 **Settings → Pages → Build and deployment → Source** 選「**GitHub Actions**」，再到 **Actions** 重新執行一次失敗的部署。私人 repo 要開 Pages 需要組織是付費方案，否則 repo 要改公開。不要選「Deploy from a branch」：每次 push 會多跑一個 `pages build and deployment`，把沒建置的原始碼也部署上去，和這個 workflow 搶。
+- 網站掛在自訂網域根目錄，workflow 的 `VITE_BASE` 設為 `/`。若取消自訂網域、改回 `https://<帳號>.github.io/<repo 名稱>/`，要把 `VITE_BASE` 改回 `/<repo 名稱>/`，否則 JS/CSS 會 404、整頁空白。
 - GitHub Pages 沒有轉址設定，建置時輸出一份與 `index.html` 相同的 `404.html`，直接開啟 `/news/712` 等網址或重新整理都能正常顯示（HTTP 狀態碼會是 404，瀏覽器顯示不受影響）。
 - 管理者後台 API 網址寫在 workflow 的 `VITE_ADMIN_API_URL`；正式網址確定後，在 repo **Settings → Secrets and variables → Actions → Variables** 新增 `VITE_SITE_URL` 才會開始讓搜尋引擎收錄。
 - **限制**：「意見反應」表單使用 Netlify Forms，放在 GitHub Pages 時**送不出去**（需改接其他收件方式）。

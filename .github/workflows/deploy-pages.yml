@@ -35,9 +35,9 @@ jobs:
       - name: 建置
         run: npm run build
         env:
-          # 網址是 https://<帳號>.github.io/<repo 名稱>/，所以根路徑是 /<repo 名稱>/；
-          # 之後改用自訂網域時改成 /
-          VITE_BASE: /${{ github.event.repository.name }}/
+          # 網站掛在自訂網域 https://caic-cert.com/ 的根目錄，所以根路徑是 /。
+          # 若取消自訂網域、改回 https://<帳號>.github.io/<repo 名稱>/，要改成 /<repo 名稱>/
+          VITE_BASE: /
           # 管理者後台 API（apps-script/admin-api.gs 部署的網頁應用程式）
           VITE_ADMIN_API_URL: https://script.google.com/macros/s/AKfycbxRniu8Cn0mt28CYfADBLWZhB1rcnbN_3bRD2PQu1GTtjH6hzNNK0PzrOYwihGKkZUq/exec
           # 正式網址確定後設定 VITE_SITE_URL（會開始讓搜尋引擎收錄）；未設定時整站不收錄
