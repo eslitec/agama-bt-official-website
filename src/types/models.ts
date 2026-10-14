@@ -135,3 +135,29 @@ export interface AdminAccount {
   /** ISO 8601 */
   createdAt: string
 }
+
+/** 通過驗證業者（開放資料同步而來） */
+export type OperatorType = 'organic' | 'tap'
+
+export interface CertifiedOperator {
+  type: OperatorType
+  name: string
+  city: string
+  products: string
+  certNo?: string
+  validDate?: string
+  orgId?: string
+}
+
+/** 各類別的同步狀態（最後同步成功時間、來源資料日期） */
+export interface OperatorSyncInfo {
+  syncedAt?: string
+  sourceDate?: string
+}
+
+export type OperatorSync = Record<OperatorType, OperatorSyncInfo>
+
+export interface CertifiedOperatorData {
+  items: CertifiedOperator[]
+  sync: OperatorSync
+}

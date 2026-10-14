@@ -19,6 +19,10 @@ export const CONTENT_SHEET = {
     quick: 958667549,
     fees: 1518946501,
     farms: 1015962713,
+    // 開放資料同步（apps-script/opendata-sync.gs 的 setupOpenDataSync() 會建立工作表並印出 gid）；
+    // -1 代表尚未建立，前端會隱藏「通過驗證業者」區塊。
+    operators: -1,
+    syncStatus: -1,
   },
 } as const
 

@@ -1,4 +1,5 @@
 import type {
+  CertifiedOperator,
   DownloadFile,
   DownloadGroup,
   Farm,
@@ -6,6 +7,8 @@ import type {
   FeeDoc,
   NewsAttachment,
   NewsItem,
+  OperatorSync,
+  OperatorType,
 } from '@/types/models'
 import { driveFile } from '@/utils/drive'
 import type { SheetRecord } from '@/api/sheet'
@@ -169,3 +172,44 @@ export const toFarms = (records: SheetRecord[]): Farm[] =>
       site: r['網站'] ?? '',
       icon: (FARM_ICONS as string[]).includes(r['圖示']) ? (r['圖示'] as FarmIconKey) : 'sprout',
     }))
+
+
+/* ───────── 通過驗證業者（開放資料同步） ───────── */
+
+const OPERATOR_TYPES: Record<string, OperatorType> = { 有機: 'organic', 產銷履歷: 'tap' }
+
+/** 「通過驗證業者」工作表 → 業者清單；類別或業者名稱空白的列略過 */
+export function toCertifiedOperators(records: SheetRecord[]): CertifiedOperator[] {
+  return records.flatMap((r) => {
+    const type = OPERATOR_TYPES[(r['類別'] ?? '').trim()]
+    const name = (r['業者名稱'] ?? '').trim()
+    if (!type || !name) return []
+    return [
+      {
+        type,
+        name,
+        city: (r['縣市'] ?? '').trim(),
+        products: (r['品項'] ?? '').trim(),
+        ...optional('certNo', r['證書字號']),
+        ...optional('validDate', r['效期']),
+        ...optional('orgId', r['業者代號']),
+      },
+    ]
+  })
+}
+
+/** 「同步狀態」工作表（項目／值）→ 各類別的最後同步時間與來源資料日期 */
+export function toOperatorSync(records: SheetRecord[]): OperatorSync {
+  const sync: OperatorSync = { organic: {}, tap: {} }
+  for (const r of records) {
+    const key = (r['項目'] ?? '').trim()
+    const value = (r['值'] ?? '').trim()
+    if (!key || !value) continue
+    const [label, field] = key.split('－')
+    const type = OPERATOR_TYPES[(label ?? '').trim()]
+    if (!type) continue
+    if (field === '最後同步成功') sync[type].syncedAt = value
+    else if (field === '來源資料日期') sync[type].sourceDate = value
+  }
+  return sync
+}

@@ -8,13 +8,15 @@ import {
   isShown,
   normalizeDate,
   parseAttachments,
+  toCertifiedOperators,
+  toOperatorSync,
   toDownloadGroups,
   toFarms,
   toFeeDocs,
   toNews,
   toQuickFiles,
 } from '@/api/sheet-mappers'
-import { sheetCsvUrl } from '@/api/sheet'
+import { sheetCsvUrl, type SheetRecord } from '@/api/sheet'
 import { newsData } from '@/api/data/news.data'
 import { downloadGroupsData, quickFilesData } from '@/api/data/downloads.data'
 import { feesData } from '@/api/data/fees.data'
@@ -203,8 +205,66 @@ describe('英文欄位', () => {
     expect(Object.keys(other!).filter((k) => k.endsWith('En'))).toEqual([])
   })
 
+  it('通過驗證業者：類別轉成英文代碼，缺類別或名稱的列略過', () => {
+    const rows: SheetRecord[] = [
+      {
+        類別: '有機',
+        業者名稱: '某某農場',
+        縣市: '臺南市',
+        品項: '蔬菜',
+        證書字號: '1-014-000711',
+        效期: '2029/07/20',
+        業者代號: '',
+      },
+      {
+        類別: '產銷履歷',
+        業者名稱: '某某合作社',
+        縣市: '嘉義縣',
+        品項: '稻米、文旦',
+        證書字號: '',
+        效期: '2027/01/31',
+        業者代號: '991623',
+      },
+      { 類別: '有機', 業者名稱: '', 縣市: '臺北市' },
+      { 類別: '未知類別', 業者名稱: '不該出現' },
+    ]
+    expect(toCertifiedOperators(rows)).toEqual([
+      {
+        type: 'organic',
+        name: '某某農場',
+        city: '臺南市',
+        products: '蔬菜',
+        certNo: '1-014-000711',
+        validDate: '2029/07/20',
+      },
+      {
+        type: 'tap',
+        name: '某某合作社',
+        city: '嘉義縣',
+        products: '稻米、文旦',
+        validDate: '2027/01/31',
+        orgId: '991623',
+      },
+    ])
+  })
+
+  it('同步狀態：項目／值轉成各類別的同步時間與來源日期', () => {
+    expect(
+      toOperatorSync([
+        { 項目: '有機－最後同步成功', 值: '2026/10/14 05:00' },
+        { 項目: '有機－來源資料日期', 值: '2026/10/13' },
+        { 項目: '有機－筆數', 值: '759' },
+        { 項目: '產銷履歷－來源資料日期', 值: '2025/12/17' },
+        { 項目: '', 值: '略過' },
+      ]),
+    ).toEqual({
+      organic: { syncedAt: '2026/10/14 05:00', sourceDate: '2026/10/13' },
+      tap: { sourceDate: '2025/12/17' },
+    })
+  })
+
   it('資料下載：同分類中檔名相同的列合併成一筆，其他格式放進 more', () => {
-    const rows = [
+    const rows: SheetRecord[] = [
       {
         分類編號: '05',
         分類名稱: '驗證手冊與作業程序',

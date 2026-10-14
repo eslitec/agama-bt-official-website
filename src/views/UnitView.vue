@@ -6,6 +6,7 @@ import PageHeading from '@/components/common/PageHeading.vue'
 import SearchField from '@/components/common/SearchField.vue'
 import InfoPanel from '@/components/common/InfoPanel.vue'
 import AsyncState from '@/components/common/AsyncState.vue'
+import CertifiedOperators from '@/components/unit/CertifiedOperators.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
 import { useLocalized } from '@/composables/useLocalized'
 import { useQueryParam } from '@/composables/useQueryParam'
@@ -45,6 +46,7 @@ const filtered = computed(() => filterUnits(units.value, unitQuery.value))
             span.unit-card__cta {{ t('unit.viewList') }}
             span.visually-hidden {{ t('common.externalLink') }}
         li.unit-grid__empty(v-if="!filtered.length") {{ t('unit.empty') }}
+    CertifiedOperators
     InfoPanel(:title="t('unit.portalTitle')")
       a.text-link(:href="externalUrls.traceableLookup" target="_blank" rel="noopener") {{ t('unit.portalTraceable') }}
       a.text-link(:href="externalUrls.organicLookup" target="_blank" rel="noopener") {{ t('unit.portalOrganic') }}
