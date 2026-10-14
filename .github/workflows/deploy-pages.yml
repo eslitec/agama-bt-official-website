@@ -40,6 +40,8 @@ jobs:
           VITE_BASE: /
           # 管理者後台 API（apps-script/admin-api.gs 部署的網頁應用程式）
           VITE_ADMIN_API_URL: https://script.google.com/macros/s/AKfycbxRniu8Cn0mt28CYfADBLWZhB1rcnbN_3bRD2PQu1GTtjH6hzNNK0PzrOYwihGKkZUq/exec
+          # 意見反應表單：GitHub Pages 沒有表單後端，改由同一個 Apps Script 寄信給公司信箱
+          VITE_CONTACT_API_URL: https://script.google.com/macros/s/AKfycbxRniu8Cn0mt28CYfADBLWZhB1rcnbN_3bRD2PQu1GTtjH6hzNNK0PzrOYwihGKkZUq/exec
           # 正式網址確定後設定 VITE_SITE_URL（會開始讓搜尋引擎收錄）；未設定時整站不收錄
           VITE_SITE_URL: ${{ vars.VITE_SITE_URL }}
 

@@ -5,6 +5,7 @@ import {
   CONTACT_FIELDS,
   CONTACT_FORM_NAME,
   CONTACT_HONEYPOT,
+  contactApiBody,
   encodeContactForm,
   type ContactPayload,
 } from '@/api/modules/contact'
@@ -31,5 +32,25 @@ describe('意見反應表單（Netlify Forms）', () => {
     expect(params.get('name')).toBe('王小明')
     expect(params.get('message')).toBe('a&b=c')
     expect(params.get(CONTACT_HONEYPOT)).toBe('')
+  })
+})
+
+describe('意見反應表單（Apps Script）', () => {
+  it('送出內容為 JSON，帶 action 與蜜罐欄位，且欄位齊全', () => {
+    const payload = Object.fromEntries(CONTACT_FIELDS.map((k) => [k, ''])) as ContactPayload
+    payload.name = '王小明'
+    payload.email = 'a@example.com'
+    payload.message = '換行\n也要保留'
+    const body = JSON.parse(contactApiBody(payload, 'spam'))
+    expect(body.action).toBe('contact')
+    expect(body.botField).toBe('spam')
+    expect(body.name).toBe('王小明')
+    expect(body.message).toBe('換行\n也要保留')
+    for (const field of CONTACT_FIELDS) expect(field in body).toBe(true)
+  })
+
+  it('沒有蜜罐內容時 botField 為空字串', () => {
+    const payload = Object.fromEntries(CONTACT_FIELDS.map((k) => [k, ''])) as ContactPayload
+    expect(JSON.parse(contactApiBody(payload)).botField).toBe('')
   })
 })

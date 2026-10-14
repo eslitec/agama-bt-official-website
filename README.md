@@ -85,6 +85,24 @@ npm run test        # Vitest
 - **前端**：`src/api/modules/admin.ts`（一律以 `Content-Type: text/plain` POST，避免 Apps Script 無法回應的 CORS 預檢）、`src/stores/auth.ts`（權杖；勾選「記住此裝置」存 localStorage，否則存 sessionStorage，權杖到期自動登出）、`src/views/admin/*`。
 - **開發模式**：`npm run dev` 且未設定 `VITE_ADMIN_API_URL` 時使用 `src/api/admin-mock.ts` 模擬後台（帳號 `admin`／密碼 `admin12345`，資料只在記憶體，重新整理後還原），行為與錯誤訊息與正式後台相同。
 
+## 意見反應表單
+
+`/contact` 的表單依環境選用收件方式（`src/api/modules/contact.ts`）：
+
+| 情況 | 收件方式 |
+| --- | --- |
+| 設定了 `VITE_API_BASE_URL` | `POST /contact` 給自家後端 |
+| `npm run dev` 且沒有後端 | 只模擬送出成功，不會真的寄出 |
+| 設定了 `VITE_CONTACT_API_URL` | 送到 Apps Script，由它寄信給公司信箱 |
+| 其他（Netlify） | Netlify Forms（偵測用的靜態表單在 `public/forms/contact.html`） |
+
+**GitHub Pages 沒有表單後端**，所以走第三條：`.github/workflows/deploy-pages.yml` 把 `VITE_CONTACT_API_URL` 設成與 `VITE_ADMIN_API_URL` 相同的 `/exec` 網址，`admin-api.gs` 的 `contact` 動作收到後寄信。
+
+- **收件信箱**：`admin-api.gs` 最上面的 `CONTACT_TO`（目前是 `caicbetter@gmail.com`）；留空則寄給 Apps Script 專案的擁有者。信件的「回覆」會直接回到來信者的 E-mail。
+- **不存進試算表**：內容試算表是「發布到網路」的，把來信者的姓名、電話、信箱寫進去等於公開，所以只寄信。要留存底的話 Gmail 本身就是紀錄。
+- **防濫用**：蜜罐欄位（真人看不到，填了就只回成功不寄信）、各欄位長度上限、全站每 10 分鐘最多 `CONTACT_MAX_PER_10MIN`（10）封；超過會回「請稍後再送出」並附上公司信箱。沒有圖形驗證碼，若之後收到大量垃圾信可再加。
+- 改 `admin-api.gs` 之後記得 **部署 → 管理部署作業 → 編輯 → 版本「新版本」**，否則線上跑的還是舊版。
+
 ### 部署 Apps Script（第一次）
 
 1. 開啟內容試算表 → **擴充功能 → Apps Script**（或以同一個 Google 帳號到 <https://script.google.com> 新增專案），把 `apps-script/admin-api.gs` 的內容貼到 `程式碼.gs` 並儲存。`SPREADSHEET_ID`、`NEWS_GID` 已對應目前的試算表；換試算表時要一起改。

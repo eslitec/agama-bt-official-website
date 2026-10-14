@@ -11,6 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_SITE_URL?: string
   /** 管理者後台 API（Google Apps Script 網頁應用程式的 …/exec 網址）；開發環境未設定時使用模擬後台 */
   readonly VITE_ADMIN_API_URL?: string
+  /** 意見反應表單的收件網址（Apps Script …/exec）；未設定時走 Netlify Forms */
+  readonly VITE_CONTACT_API_URL?: string
   /** 設為 true 時整站不讓搜尋引擎收錄（未設定 VITE_SITE_URL 時也會自動不收錄） */
   readonly VITE_NOINDEX?: string
   /** 內容試算表發布到網路的金鑰（2PACX-…）；設為 off 只用內建資料 */

@@ -1,7 +1,8 @@
 /**
  * 成大智研官網後台 API（Google Apps Script Web App）
  *
- * 用途：管理者登入後維護「成大智研官網內容」試算表的「最新消息」、「資料下載」與「人才發展」。
+ * 用途：管理者登入後維護「成大智研官網內容」試算表的「最新消息」、「資料下載」與「人才發展」，
+ *       並接收公開網站「意見反應」表單的來信（不需登入，只寄信不存進公開試算表）。
  * 第一次使用資料下載／人才發展前，在編輯器執行一次 setupAdminSheets()：
  *   會替「資料下載」補上 ID 欄並編號、建立「人才發展」工作表，並印出它的 gid。
  * 部署：部署 → 新增部署作業 → 類型「網頁應用程式」→ 執行身分「我」→ 存取權「所有人」。
@@ -24,6 +25,9 @@ var SPREADSHEET_ID = '1I2qpT_Vs0iHJmx46TZGkDwvhLMzi4IFY9O379vbnpmE'
 var NEWS_GID = 40890007
 var DOWNLOADS_GID = 1702372519
 var CAREERS_SHEET = '人才發展'
+// 意見反應收件信箱；留空則寄給這個 Apps Script 專案的擁有者
+var CONTACT_TO = 'caicbetter@gmail.com'
+var CONTACT_MAX_PER_10MIN = 10
 var TOKEN_TTL_MS = 8 * 60 * 60 * 1000
 var HASH_ROUNDS = 1000
 var MAX_FAILS = 0 // 0 = 不限制登入失敗次數（使用者要求）
@@ -104,6 +108,8 @@ function handle(body) {
       return ok(login(body))
     case 'setupStatus':
       return ok({ needsSetup: getAdmins().length === 0 })
+    case 'contact':
+      return ok(receiveContact(body))
   }
   var session = verifyToken(body.token)
   switch (action) {
@@ -774,4 +780,62 @@ function setupAdminSheets() {
     '',
     '記得把「人才發展」一併發布到網路：檔案 → 共用 → 發布到網路 → 整份文件 → CSV。',
   ].join('\n'))
+}
+
+/* ───────── 意見反應（公開，不需登入） ───────── */
+
+/**
+ * 公開網站 /contact 的表單。只把內容寄到 CONTACT_TO，不寫進「成大智研官網內容」試算表
+ * ——那份試算表是「發布到網路」的，寫進去等於把來信者的姓名、電話、信箱公開。
+ * 防濫用：蜜罐欄位、欄位長度上限、全站每 10 分鐘最多 CONTACT_MAX_PER_10MIN 封。
+ */
+function receiveContact(body) {
+  // 蜜罐：真人看不到這個欄位，填了就當成機器人，回成功但不寄信
+  if (clean(body.botField, 100)) return { sent: true }
+
+  var name = clean(body.name, 100)
+  var email = clean(body.email, 200)
+  var subject = clean(body.subject, 200)
+  var message = clean(body.message, 5000)
+  if (!name) throw apiError('VALIDATION', '請填寫姓名')
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw apiError('VALIDATION', 'E-mail 格式不正確')
+  if (!subject) throw apiError('VALIDATION', '請填寫訊息主旨')
+  if (!message) throw apiError('VALIDATION', '請填寫訊息內容')
+
+  var cache = CacheService.getScriptCache()
+  var key = 'contact-' + Math.floor(Date.now() / (10 * 60 * 1000))
+  var count = Number(cache.get(key) || 0)
+  if (count >= CONTACT_MAX_PER_10MIN) {
+    throw apiError('BUSY', '目前來信量較多，請稍後再送出，或直接來信 ' + contactTo())
+  }
+  cache.put(key, String(count + 1), 15 * 60)
+
+  var lines = [
+    '主旨類別：' + clean(body.topic, 50),
+    '姓名：' + name,
+    '服務單位：' + clean(body.organization, 200),
+    '聯絡電話：' + clean(body.phone, 50),
+    'E-mail：' + email,
+    '訊息主旨：' + subject,
+    '同意隱私權政策：' + (clean(body.privacy, 10) === 'yes' ? '是' : '否'),
+    '介面語言：' + clean(body.locale, 20),
+    '送出時間：' + formatNow(),
+    '',
+    '訊息內容：',
+    message,
+  ].join('\n')
+
+  MailApp.sendEmail({
+    to: contactTo(),
+    replyTo: email,
+    name: '成大智研官網',
+    subject: '[官網意見反應] ' + subject,
+    body: lines,
+  })
+  console.log('contact', email, subject)
+  return { sent: true }
+}
+
+function contactTo() {
+  return CONTACT_TO || Session.getEffectiveUser().getEmail()
 }
