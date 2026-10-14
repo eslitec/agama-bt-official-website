@@ -24,7 +24,7 @@ export const CONTENT_SHEET = {
     operators: 2090864750,
     syncStatus: 534394208,
     // 人才發展（admin-api.gs 的 setupAdminSheets() 建立並印出 gid）；-1 代表尚未建立
-    careers: -1,
+    careers: 1808902254,
   },
 } as const
 
