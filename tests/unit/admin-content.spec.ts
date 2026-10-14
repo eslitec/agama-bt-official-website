@@ -4,7 +4,12 @@ import { unwrap, type AdminRequestBody } from '@/api/modules/admin'
 import { groupAdminDownloads, matchesDownload } from '@/utils/admin-downloads'
 import { toCareers } from '@/api/sheet-mappers'
 import type { SheetRecord } from '@/api/sheet'
-import type { AdminCareerInput, AdminCareerItem, AdminDownloadInput } from '@/types/models'
+import type {
+  AdminCareerInput,
+  AdminCareerItem,
+  AdminDownloadInput,
+  AdminDownloadItem,
+} from '@/types/models'
 
 function setup(options: Parameters<typeof createAdminMock>[0] = {}) {
   const mock = createAdminMock(options)
@@ -94,6 +99,19 @@ describe('後台資料下載', () => {
     await expect(
       call({ action: 'moveDownload', token: t, id: second.id, dir: 'up' }),
     ).rejects.toMatchObject({ code: 'VALIDATION' })
+  })
+
+  it('改分類後整列搬到新分類最後面，分類不會被切成兩段', async () => {
+    const { call, token } = setup()
+    const t = await token()
+    const before = await call<{ items: AdminDownloadItem[] }>({ action: 'listDownloads', token: t })
+    const target = before.items.find((d) => d.n === '05')!
+    await call({ action: 'updateDownload', token: t, id: target.id, item: { ...target, n: '01' } })
+    const after = await call<{ items: AdminDownloadItem[] }>({ action: 'listDownloads', token: t })
+    const seq = after.items.map((d) => d.n).filter((n, i, a) => n !== a[i - 1])
+    expect(seq).toEqual([...new Set(seq)])
+    const group = after.items.filter((d) => d.n === '01')
+    expect(group[group.length - 1]!.id).toBe(target.id)
   })
 
   it('刪除後讀不到；再刪一次回傳 NOT_FOUND', async () => {

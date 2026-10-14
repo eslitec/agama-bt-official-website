@@ -18,11 +18,28 @@
     gap: 12px;
   }
 
+  &__heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    min-width: 0;
+  }
+
   &__title {
     font-family: $f-serif;
     font-size: clamp(24px, 4.5vw, 30px);
     font-weight: 900;
     color: $c-ink;
+  }
+
+  &__public {
+    font-size: 13px;
+    color: $c-primary;
+    white-space: nowrap;
+    @include hover {
+      text-decoration: underline;
+    }
   }
 
   &__toolbar {
@@ -36,6 +53,14 @@
     display: flex;
     gap: 12px;
     font-size: 13px;
+    color: $c-muted;
+  }
+
+  &__lead,
+  &__hint {
+    max-width: 68ch;
+    font-size: 13px;
+    line-height: 1.8;
     color: $c-muted;
   }
 
@@ -186,6 +211,27 @@
     }
   }
 
+  /* 剛移動的那一列：短暫打亮，讓使用者知道是哪一筆動了 */
+  &__row.is-moved {
+    animation: admin-row-moved 1.6s ease-out;
+  }
+
+  /* 已下架的列整體淡化，掃一眼就看得出來哪些公開網站看不到 */
+  &__row--off {
+    background: repeating-linear-gradient(
+      135deg,
+      transparent,
+      transparent 8px,
+      rgba(0, 0, 0, 0.015) 8px,
+      rgba(0, 0, 0, 0.015) 16px
+    );
+
+    .admin-table__title,
+    .admin-table__date {
+      color: $c-muted;
+    }
+  }
+
   &__empty {
     padding: 32px;
     text-align: center;
@@ -223,11 +269,28 @@
     max-width: 100%;
   }
 
+  &__heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    min-width: 0;
+  }
+
   &__title {
     font-family: $f-serif;
     font-size: clamp(24px, 4.5vw, 30px);
     font-weight: 900;
     color: $c-ink;
+  }
+
+  &__public {
+    font-size: 13px;
+    color: $c-primary;
+    white-space: nowrap;
+    @include hover {
+      text-decoration: underline;
+    }
   }
 
   &__id {
@@ -331,5 +394,23 @@
     .btn {
       min-width: 120px;
     }
+  }
+}
+
+@keyframes admin-row-moved {
+  0%,
+  40% {
+    background-color: rgba(0, 122, 122, 0.12);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-table__row.is-moved {
+    animation: none;
+    outline: 2px solid $c-primary;
+    outline-offset: -2px;
   }
 }

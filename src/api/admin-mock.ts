@@ -357,7 +357,15 @@ export function createAdminMock(options: AdminMockOptions = {}) {
         const i = downloads.findIndex((d) => d.id === Number(body.id))
         if (i < 0) fail('NOT_FOUND', '找不到這份文件，可能已被刪除')
         const item = { id: Number(body.id), ...v }
-        downloads[i] = item
+        // 與後端一致：改了分類就搬到新分類最後面，分類在試算表上才不會被切成兩段
+        if (downloads[i]!.n !== v.n) {
+          const rest = downloads.filter((_, n) => n !== i)
+          const last = rest.map((d) => d.n).lastIndexOf(v.n)
+          downloads =
+            last < 0 ? [...rest, item] : [...rest.slice(0, last + 1), item, ...rest.slice(last + 1)]
+        } else {
+          downloads[i] = item
+        }
         return { item }
       }
       case 'deleteDownload': {

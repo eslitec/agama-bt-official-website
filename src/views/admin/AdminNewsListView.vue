@@ -80,7 +80,11 @@ async function confirmDelete(): Promise<void> {
 <template lang="pug">
 section.admin-list
   header.admin-list__head
-    h1.admin-list__title {{ t('admin.news.title') }}
+    .admin-list__heading
+      h1.admin-list__title {{ t('admin.news.title') }}
+      RouterLink.admin-list__public(:to="{ name: 'news' }" target="_blank")
+        | {{ t('admin.viewPublic') }}
+        span.visually-hidden {{ t('common.externalLink') }}
     RouterLink.btn.btn--primary(:to="{ name: 'adminNewsNew' }")
       MIcon(name="add" :size="18")
       | {{ t('admin.news.add') }}
@@ -119,7 +123,12 @@ section.admin-list
       span {{ t('admin.news.colVisible') }}
       span {{ t('admin.news.colActions') }}
     ul.admin-table__body
-      li.admin-table__row(v-for="n in shown" :key="n.id" :data-id="n.id")
+      li.admin-table__row(
+        v-for="n in shown"
+        :key="n.id"
+        :class="{ 'admin-table__row--off': !n.visible }"
+        :data-id="n.id"
+      )
         time.admin-table__date(:datetime="n.date.replaceAll('.', '-')") {{ n.date }}
         .admin-table__main
           RouterLink.admin-table__title(:to="{ name: 'adminNewsEdit', params: { id: n.id } }") {{ n.title }}

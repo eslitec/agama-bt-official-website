@@ -606,9 +606,18 @@ function updateDownload(id, input, user) {
   var v = validateDownload(input)
   var sheet = downloadsSheet()
   var map = downloadsMap(sheet)
-  var at = rowIndexOfId(readRows(sheet, map), map, id)
+  var rows = readRows(sheet, map)
+  var at = rowIndexOfId(rows, map, id)
   if (at < 0) throw apiError('NOT_FOUND', '找不到這份文件，可能已被刪除')
   v.id = String(Number(id))
+  // 改了分類就把這一列實際搬到新分類的最後面，否則它會留在原位，
+  // 讓試算表上同一個分類被切成不連續的兩段（看起來像漏了一列）
+  if (String(rows[at - 2][map.n]).trim() !== v.n) {
+    sheet.deleteRow(at)
+    var left = readRows(sheet, map)
+    at = insertIndexFor(left, map, v.n)
+    if (at <= sheet.getLastRow()) sheet.insertRowBefore(at)
+  }
   writeMapped(sheet, map, at, v)
   console.log('updateDownload', user, id)
   return rowToDownload(sheet.getRange(at, 1, 1, map._width).getValues()[0], map)

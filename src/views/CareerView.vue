@@ -55,7 +55,8 @@ const isMail = (href: string): boolean => href.startsWith('mailto:')
             )
               | {{ isMail(c.href) ? c.href.replace('mailto:', '') : t('career.go') }}
               span.visually-hidden(v-if="!isMail(c.href)") {{ t('common.externalLink') }}
-    p.career-contact {{ t('career.contact') }}
+      //- 聯絡方式放在 AsyncState 內，載入中與載入失敗時不要先冒出來
+      p.career-contact {{ t('career.contact') }}
 </template>
 
 <style scoped lang="scss">

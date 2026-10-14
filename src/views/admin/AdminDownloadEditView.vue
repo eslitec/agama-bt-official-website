@@ -65,9 +65,11 @@ const knownGroups = computed(() => {
   return [...seen.values()]
 })
 
+/** 一次性的輔助工具：把選到的分類填進下面兩個欄位後就復原，避免看起來像一個會被送出的欄位 */
 function pickGroup(e: Event): void {
-  const n = (e.target as HTMLSelectElement).value
-  const g = knownGroups.value.find((v) => v.n === n)
+  const select = e.target as HTMLSelectElement
+  const g = knownGroups.value.find((v) => v.n === select.value)
+  select.value = ''
   if (!g) return
   form.n = g.n
   form.group = g.group
