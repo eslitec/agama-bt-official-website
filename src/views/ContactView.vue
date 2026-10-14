@@ -373,10 +373,4 @@ function reset(): void {
   background-position: right 16px center;
   cursor: pointer;
 }
-
-.field__textarea {
-  min-height: 170px;
-  resize: vertical;
-  line-height: 1.8;
-}
 </style>

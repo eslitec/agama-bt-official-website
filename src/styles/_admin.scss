@@ -1,0 +1,335 @@
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+/* 後台列表共用樣式：最新消息、資料下載、人才發展三個列表頁共用。
+ * 各頁若欄位數不同，在該頁的 scoped style 覆寫 .admin-table__row 的 grid-template-columns。
+ */
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  &__title {
+    font-family: $f-serif;
+    font-size: clamp(24px, 4.5vw, 30px);
+    font-weight: 900;
+    color: $c-ink;
+  }
+
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  &__summary {
+    display: flex;
+    gap: 12px;
+    font-size: 13px;
+    color: $c-muted;
+  }
+
+  &__target {
+    padding: 10px 12px;
+    background: $c-sand;
+    color: $c-ink;
+    overflow-wrap: anywhere;
+  }
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid $c-line-2;
+  background: $c-white;
+
+  &__item {
+    position: relative;
+    display: flex;
+    cursor: pointer;
+
+    & + & {
+      border-left: 1px solid $c-line-2;
+    }
+  }
+
+  &__input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  &__text {
+    padding: 12px 16px;
+    font-size: 14px;
+    color: $c-text;
+    white-space: nowrap;
+  }
+
+  &__input:checked + &__text {
+    background: $c-primary;
+    color: $c-paper;
+    font-weight: 700;
+  }
+
+  &__input:focus-visible + &__text {
+    outline: 2px solid $c-primary;
+    outline-offset: 2px;
+  }
+}
+
+.admin-table {
+  border: 1px solid $c-line;
+  background: $c-white;
+
+  &__body {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 100px minmax(0, 1fr) 64px auto;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    border-bottom: 1px solid $c-line-soft;
+
+    &--head {
+      padding-block: 10px;
+      background: $c-sand;
+      font-size: 12px;
+      font-weight: 700;
+      color: $c-muted;
+    }
+
+    @include below(md) {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        'date badge'
+        'main main'
+        'actions actions';
+      gap: 6px 12px;
+      padding: 14px 16px;
+
+      &--head {
+        display: none;
+      }
+    }
+  }
+
+  &__date {
+    font-family: $f-display;
+    font-size: 13px;
+    font-weight: 700;
+    color: $c-primary;
+
+    @include below(md) {
+      grid-area: date;
+    }
+  }
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    @include below(md) {
+      grid-area: main;
+    }
+  }
+
+  &__title {
+    font-size: 14px;
+    line-height: 1.7;
+    color: $c-ink;
+    overflow-wrap: anywhere;
+    @include hover {
+      color: $c-primary;
+      text-decoration: underline;
+    }
+  }
+
+  &__meta {
+    font-size: 12px;
+    color: $c-muted;
+    overflow-wrap: anywhere;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+
+    @include below(md) {
+      grid-area: actions;
+      padding-top: 4px;
+    }
+  }
+
+  .badge {
+    @include below(md) {
+      grid-area: badge;
+      justify-self: end;
+    }
+  }
+
+  &__empty {
+    padding: 32px;
+    text-align: center;
+    font-size: 14px;
+    color: $c-muted;
+  }
+}
+
+.badge {
+  display: inline-flex;
+  justify-content: center;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+
+  &--on {
+    background: #e8f3f3;
+    color: $c-primary-dark;
+  }
+
+  &--off {
+    background: $c-danger-bg;
+    color: $c-danger;
+  }
+}
+.admin-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+
+  > * {
+    max-width: 100%;
+  }
+
+  &__title {
+    font-family: $f-serif;
+    font-size: clamp(24px, 4.5vw, 30px);
+    font-weight: 900;
+    color: $c-ink;
+  }
+
+  &__id {
+    margin-left: 12px;
+    font-family: $f-display;
+    font-size: 14px;
+    font-weight: 700;
+    color: $c-muted;
+  }
+
+  &__loading {
+    font-size: 14px;
+    color: $c-muted;
+  }
+
+  &__form {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding: 32px;
+    border: 1px solid $c-line;
+    background: $c-white;
+
+    @include below(sm) {
+      padding: 22px 16px;
+    }
+  }
+
+  &__grid {
+    @include auto-grid(240px, 22px);
+  }
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+    margin: 0;
+    padding: 18px;
+    border: 1px solid $c-line;
+  }
+
+  &__legend {
+    padding: 0 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: $c-ink;
+  }
+
+  &__hint {
+    font-size: 13px;
+    line-height: 1.7;
+    color: $c-muted;
+  }
+
+  &__row {
+    align-self: stretch;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+    align-items: start;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed $c-line;
+
+    &--single {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    @include below(md) {
+      grid-template-columns: minmax(0, 1fr);
+
+      &--single {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  }
+
+  &__remove {
+    // 與輸入框對齊（欄位標籤高度）
+    margin-top: 26px;
+
+    @include below(md) {
+      margin-top: 0;
+      justify-self: end;
+    }
+  }
+
+  &__visible {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .btn {
+      min-width: 120px;
+    }
+  }
+}

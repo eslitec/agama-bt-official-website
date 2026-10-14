@@ -213,6 +213,11 @@ img {
     font-size: 13px;
   }
 
+  // 只有圖示的方形按鈕（例如排序的上下箭頭）
+  &--icon {
+    padding: 7px;
+  }
+
   &--danger {
     border: 1px solid $c-danger;
     color: $c-danger;
@@ -386,6 +391,12 @@ img {
 }
 
 // ─── 表單訊息 ─────────────────────────────────────
+.field__textarea {
+  min-height: 170px;
+  resize: vertical;
+  line-height: 1.8;
+}
+
 .form-alert {
   margin: 0;
   padding: 12px 14px;

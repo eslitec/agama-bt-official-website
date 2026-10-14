@@ -17,6 +17,18 @@ const tabs = computed(() => [
     active: String(route.name ?? '').startsWith('adminNews'),
   },
   {
+    key: 'downloads',
+    to: { name: 'adminDownloads' },
+    label: t('admin.tabDownloads'),
+    active: String(route.name ?? '').startsWith('adminDownload'),
+  },
+  {
+    key: 'careers',
+    to: { name: 'adminCareers' },
+    label: t('admin.tabCareers'),
+    active: String(route.name ?? '').startsWith('adminCareer'),
+  },
+  {
     key: 'account',
     to: { name: 'adminAccount' },
     label: t('admin.tabAccount'),
@@ -99,7 +111,11 @@ async function onLogout(): Promise<void> {
 .admin-tabs {
   display: flex;
   gap: 4px;
+  // 分頁變多後，窄螢幕改成左右捲動，不要把整頁撐寬
+  max-width: 100%;
+  overflow-x: auto;
   border-bottom: 1px solid $c-line;
+  scrollbar-width: thin;
 
   &__link {
     padding: 10px 16px;

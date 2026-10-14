@@ -1,4 +1,14 @@
-import type { AdminAccount, AdminNewsInput, AdminNewsItem, AdminSession } from '@/types/models'
+import type {
+  AdminAccount,
+  AdminCareerInput,
+  AdminCareerItem,
+  AdminDownloadInput,
+  AdminDownloadItem,
+  AdminNewsInput,
+  AdminNewsItem,
+  AdminSession,
+  MoveDir,
+} from '@/types/models'
 
 /**
  * 管理者後台 API（Google Apps Script Web App，原始碼在 apps-script/admin-api.gs）。
@@ -137,6 +147,52 @@ export const updateNews = (
 
 export const deleteNews = (token: string, id: number): Promise<{ id: number }> =>
   request('deleteNews', { token, id })
+
+export const listDownloads = (token: string): Promise<{ items: AdminDownloadItem[] }> =>
+  request('listDownloads', { token })
+
+export const createDownload = (
+  token: string,
+  item: AdminDownloadInput,
+): Promise<{ item: AdminDownloadItem }> => request('createDownload', { token, item })
+
+export const updateDownload = (
+  token: string,
+  id: number,
+  item: AdminDownloadInput,
+): Promise<{ item: AdminDownloadItem }> => request('updateDownload', { token, id, item })
+
+export const deleteDownload = (token: string, id: number): Promise<{ id: number }> =>
+  request('deleteDownload', { token, id })
+
+export const moveDownload = (
+  token: string,
+  id: number,
+  dir: MoveDir,
+): Promise<{ items: AdminDownloadItem[] }> => request('moveDownload', { token, id, dir })
+
+export const listCareers = (token: string): Promise<{ items: AdminCareerItem[] }> =>
+  request('listCareers', { token })
+
+export const createCareer = (
+  token: string,
+  item: AdminCareerInput,
+): Promise<{ item: AdminCareerItem }> => request('createCareer', { token, item })
+
+export const updateCareer = (
+  token: string,
+  id: number,
+  item: AdminCareerInput,
+): Promise<{ item: AdminCareerItem }> => request('updateCareer', { token, id, item })
+
+export const deleteCareer = (token: string, id: number): Promise<{ id: number }> =>
+  request('deleteCareer', { token, id })
+
+export const moveCareer = (
+  token: string,
+  id: number,
+  dir: MoveDir,
+): Promise<{ items: AdminCareerItem[] }> => request('moveCareer', { token, id, dir })
 
 export const changePassword = (
   token: string,

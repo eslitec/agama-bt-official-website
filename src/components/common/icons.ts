@@ -4,6 +4,8 @@
  */
 import add from '@material-symbols/svg-400/rounded/add-fill.svg?raw'
 import agriculture from '@material-symbols/svg-400/rounded/agriculture-fill.svg?raw'
+import arrowDownward from '@material-symbols/svg-400/rounded/arrow_downward-fill.svg?raw'
+import arrowUpward from '@material-symbols/svg-400/rounded/arrow_upward-fill.svg?raw'
 import check from '@material-symbols/svg-400/rounded/check-fill.svg?raw'
 import close from '@material-symbols/svg-400/rounded/close-fill.svg?raw'
 import deleteIcon from '@material-symbols/svg-400/rounded/delete-fill.svg?raw'
@@ -29,6 +31,8 @@ const strip = (svg: string): string =>
 const raw = {
   add,
   agriculture,
+  arrow_downward: arrowDownward,
+  arrow_upward: arrowUpward,
   check,
   close,
   delete: deleteIcon,

@@ -11,7 +11,7 @@ import type {
 import HomeView from '@/views/HomeView.vue'
 
 export type NavKey =
-  'home' | 'about' | 'how' | 'fee' | 'unit' | 'download' | 'news' | 'farm' | 'link'
+  'home' | 'about' | 'how' | 'fee' | 'unit' | 'download' | 'news' | 'farm' | 'career' | 'link'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -101,6 +101,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'farm.title', nav: 'farm', description: 'farm.lead', zhContent: true },
   },
   {
+    path: '/careers',
+    name: 'career',
+    component: () => import('@/views/CareerView.vue'),
+    meta: { title: 'career.title', nav: 'career', description: 'career.lead', zhContent: true },
+  },
+  {
     path: '/links',
     name: 'link',
     component: () => import('@/views/LinkView.vue'),
@@ -136,6 +142,44 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/admin/AdminNewsEditView.vue'),
         props: (route) => ({ id: Number(route.params.id) }),
         meta: { title: 'admin.news.editTitle' },
+      },
+      {
+        path: 'downloads',
+        name: 'adminDownloads',
+        component: () => import('@/views/admin/AdminDownloadsListView.vue'),
+        meta: { title: 'admin.downloads.title' },
+      },
+      {
+        path: 'downloads/new',
+        name: 'adminDownloadNew',
+        component: () => import('@/views/admin/AdminDownloadEditView.vue'),
+        meta: { title: 'admin.downloads.newTitle' },
+      },
+      {
+        path: 'downloads/:id(\\d+)',
+        name: 'adminDownloadEdit',
+        component: () => import('@/views/admin/AdminDownloadEditView.vue'),
+        props: (route) => ({ id: Number(route.params.id) }),
+        meta: { title: 'admin.downloads.editTitle' },
+      },
+      {
+        path: 'careers',
+        name: 'adminCareers',
+        component: () => import('@/views/admin/AdminCareersListView.vue'),
+        meta: { title: 'admin.careers.title' },
+      },
+      {
+        path: 'careers/new',
+        name: 'adminCareerNew',
+        component: () => import('@/views/admin/AdminCareerEditView.vue'),
+        meta: { title: 'admin.careers.newTitle' },
+      },
+      {
+        path: 'careers/:id(\\d+)',
+        name: 'adminCareerEdit',
+        component: () => import('@/views/admin/AdminCareerEditView.vue'),
+        props: (route) => ({ id: Number(route.params.id) }),
+        meta: { title: 'admin.careers.editTitle' },
       },
       {
         path: 'account',

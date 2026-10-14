@@ -16,7 +16,18 @@ const auth = useAuthStore()
 const { isLoggedIn } = storeToRefs(auth)
 const { condensed } = useScrollProgress()
 
-const NAV: NavKey[] = ['home', 'about', 'how', 'fee', 'unit', 'download', 'news', 'farm', 'link']
+const NAV: NavKey[] = [
+  'home',
+  'about',
+  'how',
+  'fee',
+  'unit',
+  'download',
+  'news',
+  'farm',
+  'career',
+  'link',
+]
 const activeKey = computed(() => route.meta.nav)
 
 /**

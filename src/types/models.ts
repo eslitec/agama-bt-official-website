@@ -122,6 +122,58 @@ export interface AdminNewsItem {
 /** 新增、修改時送出的內容（ID 由伺服器指定） */
 export type AdminNewsInput = Omit<AdminNewsItem, 'id'>
 
+/** 後台的資料下載列（一列＝一個檔案；同分類同檔名的多種格式在前台會合併顯示） */
+export interface AdminDownloadItem {
+  id: number
+  /** 分類編號，決定分類在前台的排序 */
+  n: string
+  group: string
+  groupEn: string
+  name: string
+  nameEn: string
+  /** 格式代碼，例如 PDF、DOC */
+  ext: string
+  href: string
+  visible: boolean
+}
+
+export type AdminDownloadInput = Omit<AdminDownloadItem, 'id'>
+
+/** 人才發展：職缺與教育訓練 */
+export type CareerKind = 'job' | 'training'
+
+export interface Career {
+  id: number
+  kind: CareerKind
+  title: string
+  titleEn?: string
+  place?: string
+  nature?: string
+  period?: string
+  body: string
+  bodyEn?: string
+  href?: string
+}
+
+export interface AdminCareerItem {
+  id: number
+  kind: CareerKind
+  title: string
+  titleEn: string
+  place: string
+  nature: string
+  period: string
+  body: string
+  bodyEn: string
+  href: string
+  visible: boolean
+}
+
+export type AdminCareerInput = Omit<AdminCareerItem, 'id'>
+
+/** 列表上下移動的方向 */
+export type MoveDir = 'up' | 'down'
+
 /** 登入成功後取得的權杖 */
 export interface AdminSession {
   username: string

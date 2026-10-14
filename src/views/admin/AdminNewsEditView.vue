@@ -236,19 +236,19 @@ useEventListener(window, 'beforeunload', (e: BeforeUnloadEvent) => {
 </script>
 
 <template lang="pug">
-section.news-edit
+section.admin-edit
   RouterLink.text-link(:to="{ name: 'adminNews' }") {{ t('admin.news.back') }}
-  h1.news-edit__title {{ heading }}
-    span.news-edit__id(v-if="!isNew") ID {{ id }}
+  h1.admin-edit__title {{ heading }}
+    span.admin-edit__id(v-if="!isNew") ID {{ id }}
 
   p.form-alert(v-if="notFound" role="alert") {{ t('admin.news.notFound') }}
   p.form-alert(v-else-if="loadError" role="alert")
     | {{ loadError }}
     |
     button.text-link(type="button" @click="load") {{ t('common.retry') }}
-  p.news-edit__loading(v-else-if="loading" aria-busy="true") {{ t('common.loading') }}
+  p.admin-edit__loading(v-else-if="loading" aria-busy="true") {{ t('common.loading') }}
 
-  form.news-edit__form(
+  form.admin-edit__form(
     v-if="ready"
     ref="formEl"
     novalidate
@@ -256,7 +256,7 @@ section.news-edit
   )
     p.form-alert(v-if="formError" role="alert") {{ formError }}
 
-    .news-edit__grid
+    .admin-edit__grid
       FormField(
         :id="ids.date"
         :label="t('admin.news.fields.date')"
@@ -317,10 +317,10 @@ section.news-edit
         :placeholder="t('admin.news.fields.titleEnPh')"
       )
 
-    fieldset.news-edit__group
-      legend.news-edit__legend {{ t('admin.news.fields.atts') }}
-      p.news-edit__hint {{ t('admin.news.fields.attsHint') }}
-      .news-edit__row(v-for="(a, i) in form.atts" :key="a.key" data-row="att")
+    fieldset.admin-edit__group
+      legend.admin-edit__legend {{ t('admin.news.fields.atts') }}
+      p.admin-edit__hint {{ t('admin.news.fields.attsHint') }}
+      .admin-edit__row(v-for="(a, i) in form.atts" :key="a.key" data-row="att")
         FormField(
           :id="attId(i, 'label')"
           :label="t('admin.news.fields.attLabel', { n: i + 1 })"
@@ -349,21 +349,21 @@ section.news-edit
             spellcheck="false"
             :placeholder="t('admin.news.fields.attHrefPh')"
           )
-        button.btn.btn--danger.btn--sm.news-edit__remove(
+        button.btn.btn--danger.btn--sm.admin-edit__remove(
           type="button"
           :aria-label="t('admin.news.fields.removeAtt', { n: i + 1 })"
           @click="form.atts.splice(i, 1)"
         )
           MIcon(name="delete" :size="16")
           | {{ t('admin.news.fields.remove') }}
-      button.btn.btn--outline.btn--sm.news-edit__add(type="button" @click="addAtt")
+      button.btn.btn--outline.btn--sm.admin-edit__add(type="button" @click="addAtt")
         MIcon(name="add" :size="16")
         | {{ t('admin.news.fields.addAtt') }}
 
-    fieldset.news-edit__group
-      legend.news-edit__legend {{ t('admin.news.fields.imgs') }}
-      p.news-edit__hint {{ t('admin.news.fields.imgsHint') }}
-      .news-edit__row.news-edit__row--single(
+    fieldset.admin-edit__group
+      legend.admin-edit__legend {{ t('admin.news.fields.imgs') }}
+      p.admin-edit__hint {{ t('admin.news.fields.imgsHint') }}
+      .admin-edit__row.admin-edit__row--single(
         v-for="(r, i) in form.imgs"
         :key="r.key"
         data-row="img"
@@ -383,25 +383,25 @@ section.news-edit
             spellcheck="false"
             placeholder="https://"
           )
-        button.btn.btn--danger.btn--sm.news-edit__remove(
+        button.btn.btn--danger.btn--sm.admin-edit__remove(
           type="button"
           :aria-label="t('admin.news.fields.removeImg', { n: i + 1 })"
           @click="form.imgs.splice(i, 1)"
         )
           MIcon(name="delete" :size="16")
           | {{ t('admin.news.fields.remove') }}
-      button.btn.btn--outline.btn--sm.news-edit__add(type="button" @click="addImg")
+      button.btn.btn--outline.btn--sm.admin-edit__add(type="button" @click="addImg")
         MIcon(name="add" :size="16")
         | {{ t('admin.news.fields.addImg') }}
 
-    .news-edit__visible
+    .admin-edit__visible
       label.checkbox
         input#news-visible.checkbox__input(v-model="form.visible" type="checkbox")
         span.checkbox__box(aria-hidden="true")
         span.checkbox__text {{ t('admin.news.fields.visible') }}
-      p.news-edit__hint {{ t('admin.news.fields.visibleHint') }}
+      p.admin-edit__hint {{ t('admin.news.fields.visibleHint') }}
 
-    .news-edit__actions
+    .admin-edit__actions
       button.btn.btn--primary(type="submit" :disabled="saving")
         | {{ saving ? t('admin.news.saving') : t('admin.news.save') }}
       RouterLink.btn.btn--outline(:to="{ name: 'adminNews' }") {{ t('admin.cancel') }}
@@ -419,125 +419,5 @@ section.news-edit
 </template>
 
 <style scoped lang="scss">
-.news-edit {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 16px;
-  min-width: 0;
-
-  > * {
-    max-width: 100%;
-  }
-
-  &__title {
-    font-family: $f-serif;
-    font-size: clamp(24px, 4.5vw, 30px);
-    font-weight: 900;
-    color: $c-ink;
-  }
-
-  &__id {
-    margin-left: 12px;
-    font-family: $f-display;
-    font-size: 14px;
-    font-weight: 700;
-    color: $c-muted;
-  }
-
-  &__loading {
-    font-size: 14px;
-    color: $c-muted;
-  }
-
-  &__form {
-    align-self: stretch;
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
-    padding: 32px;
-    border: 1px solid $c-line;
-    background: $c-white;
-
-    @include below(sm) {
-      padding: 22px 16px;
-    }
-  }
-
-  &__grid {
-    @include auto-grid(240px, 22px);
-  }
-
-  &__group {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    min-width: 0;
-    margin: 0;
-    padding: 18px;
-    border: 1px solid $c-line;
-  }
-
-  &__legend {
-    padding: 0 6px;
-    font-size: 14px;
-    font-weight: 700;
-    color: $c-ink;
-  }
-
-  &__hint {
-    font-size: 13px;
-    line-height: 1.7;
-    color: $c-muted;
-  }
-
-  &__row {
-    align-self: stretch;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
-    align-items: start;
-    gap: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px dashed $c-line;
-
-    &--single {
-      grid-template-columns: minmax(0, 1fr) auto;
-    }
-
-    @include below(md) {
-      grid-template-columns: minmax(0, 1fr);
-
-      &--single {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-  }
-
-  &__remove {
-    // 與輸入框對齊（欄位標籤高度）
-    margin-top: 26px;
-
-    @include below(md) {
-      margin-top: 0;
-      justify-self: end;
-    }
-  }
-
-  &__visible {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  &__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-
-    .btn {
-      min-width: 120px;
-    }
-  }
-}
+/* 後台編輯表單樣式（.admin-edit）在 src/styles/_admin.scss */
 </style>

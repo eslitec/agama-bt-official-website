@@ -1,7 +1,9 @@
 /**
  * 成大智研官網後台 API（Google Apps Script Web App）
  *
- * 用途：管理者登入後新增、修改、刪除「成大智研官網內容」試算表的「最新消息」。
+ * 用途：管理者登入後維護「成大智研官網內容」試算表的「最新消息」、「資料下載」與「人才發展」。
+ * 第一次使用資料下載／人才發展前，在編輯器執行一次 setupAdminSheets()：
+ *   會替「資料下載」補上 ID 欄並編號、建立「人才發展」工作表，並印出它的 gid。
  * 部署：部署 → 新增部署作業 → 類型「網頁應用程式」→ 執行身分「我」→ 存取權「所有人」。
  *       部署後的網址填到網站環境變數 VITE_ADMIN_API_URL。
  * 初次設定：在編輯器執行 createSetupCode()，到「執行記錄」看設定碼，
@@ -20,6 +22,8 @@
 
 var SPREADSHEET_ID = '1I2qpT_Vs0iHJmx46TZGkDwvhLMzi4IFY9O379vbnpmE'
 var NEWS_GID = 40890007
+var DOWNLOADS_GID = 1702372519
+var CAREERS_SHEET = '人才發展'
 var TOKEN_TTL_MS = 8 * 60 * 60 * 1000
 var HASH_ROUNDS = 1000
 var MAX_FAILS = 0 // 0 = 不限制登入失敗次數（使用者要求）
@@ -39,6 +43,35 @@ var NEWS_HEADERS = {
   imgs: '圖片',
   visible: '顯示',
 }
+
+var DOWNLOAD_HEADERS = {
+  n: '分類編號',
+  group: '分類名稱',
+  groupEn: '分類名稱（英文）',
+  name: '檔名',
+  nameEn: '檔名（英文）',
+  ext: '格式',
+  href: '檔案連結',
+  visible: '顯示',
+  id: 'ID',
+}
+
+var CAREER_HEADERS = {
+  id: 'ID',
+  kind: '類型',
+  title: '標題',
+  titleEn: '標題（英文）',
+  place: '地點',
+  nature: '性質',
+  period: '期間',
+  body: '說明',
+  bodyEn: '說明（英文）',
+  href: '連結',
+  visible: '顯示',
+}
+
+var CAREER_KINDS = { 職缺: 'job', 教育訓練: 'training' }
+var CAREER_KIND_LABELS = { job: '職缺', training: '教育訓練' }
 
 /* ───────── 進入點 ───────── */
 
@@ -84,6 +117,26 @@ function handle(body) {
       return ok({ item: withLock(function () { return updateNews(body.id, body.item, session.u) }) })
     case 'deleteNews':
       return ok({ id: withLock(function () { return deleteNews(body.id, session.u) }) })
+    case 'listDownloads':
+      return ok({ items: listDownloads() })
+    case 'createDownload':
+      return ok({ item: withLock(function () { return createDownload(body.item, session.u) }) })
+    case 'updateDownload':
+      return ok({ item: withLock(function () { return updateDownload(body.id, body.item, session.u) }) })
+    case 'deleteDownload':
+      return ok({ id: withLock(function () { return deleteDownload(body.id, session.u) }) })
+    case 'moveDownload':
+      return ok({ items: withLock(function () { return moveDownload(body.id, body.dir, session.u) }) })
+    case 'listCareers':
+      return ok({ items: listCareers() })
+    case 'createCareer':
+      return ok({ item: withLock(function () { return createCareer(body.item, session.u) }) })
+    case 'updateCareer':
+      return ok({ item: withLock(function () { return updateCareer(body.id, body.item, session.u) }) })
+    case 'deleteCareer':
+      return ok({ id: withLock(function () { return deleteCareer(body.id, session.u) }) })
+    case 'moveCareer':
+      return ok({ items: withLock(function () { return moveCareer(body.id, body.dir, session.u) }) })
     case 'changePassword':
       return ok(changePassword(session.u, body.currentPassword, body.newPassword))
     case 'listAdmins':
@@ -272,20 +325,28 @@ function withLock(fn) {
   }
 }
 
-function newsSheet() {
+function sheetByGid(gid, label) {
   var sheet = SpreadsheetApp.openById(SPREADSHEET_ID)
     .getSheets()
-    .filter(function (s) { return s.getSheetId() === NEWS_GID })[0]
-  if (!sheet) throw apiError('SERVER', '找不到「最新消息」工作表')
+    .filter(function (s) { return s.getSheetId() === gid })[0]
+  if (!sheet) throw apiError('SERVER', '找不到「' + label + '」工作表')
   return sheet
 }
 
-function columnMap(sheet) {
+function sheetByName(name) {
+  var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(name)
+  if (!sheet) throw apiError('SERVER', '找不到「' + name + '」工作表，請先執行 setupAdminSheets()')
+  return sheet
+}
+
+function newsSheet() { return sheetByGid(NEWS_GID, '最新消息') }
+
+function columnMap(sheet, headers, label) {
   var header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim() })
   var map = {}
-  Object.keys(NEWS_HEADERS).forEach(function (key) {
-    var idx = header.indexOf(NEWS_HEADERS[key])
-    if (idx < 0) throw apiError('SERVER', '「最新消息」缺少欄位：' + NEWS_HEADERS[key])
+  Object.keys(headers).forEach(function (key) {
+    var idx = header.indexOf(headers[key])
+    if (idx < 0) throw apiError('SERVER', '「' + label + '」缺少欄位：' + headers[key] + '，請先執行 setupAdminSheets()')
     map[key] = idx
   })
   map._width = header.length
@@ -331,7 +392,7 @@ function readRows(sheet, map) {
 
 function listNews() {
   var sheet = newsSheet()
-  var map = columnMap(sheet)
+  var map = columnMap(sheet, NEWS_HEADERS, '最新消息')
   return readRows(sheet, map)
     .filter(function (r) { return String(r[map.id]).trim() !== '' })
     .map(function (r) { return rowToItem(r, map) })
@@ -393,7 +454,7 @@ function findRowIndex(sheet, map, id) {
 function createNews(input, user) {
   var v = validateItem(input)
   var sheet = newsSheet()
-  var map = columnMap(sheet)
+  var map = columnMap(sheet, NEWS_HEADERS, '最新消息')
   var maxId = readRows(sheet, map).reduce(function (m, r) { return Math.max(m, Number(r[map.id]) || 0) }, 0)
   var id = maxId + 1
   sheet.insertRowBefore(2)
@@ -405,7 +466,7 @@ function createNews(input, user) {
 function updateNews(id, input, user) {
   var v = validateItem(input)
   var sheet = newsSheet()
-  var map = columnMap(sheet)
+  var map = columnMap(sheet, NEWS_HEADERS, '最新消息')
   var rowIndex = findRowIndex(sheet, map, id)
   if (rowIndex < 0) throw apiError('NOT_FOUND', '找不到這則消息，可能已被刪除')
   writeRow(sheet, map, rowIndex, Number(id), v)
@@ -415,10 +476,302 @@ function updateNews(id, input, user) {
 
 function deleteNews(id, user) {
   var sheet = newsSheet()
-  var map = columnMap(sheet)
+  var map = columnMap(sheet, NEWS_HEADERS, '最新消息')
   var rowIndex = findRowIndex(sheet, map, id)
   if (rowIndex < 0) throw apiError('NOT_FOUND', '找不到這則消息，可能已被刪除')
   sheet.deleteRow(rowIndex)
   console.log('deleteNews', user, id)
   return Number(id)
+}
+
+/* ───────── 共用：有 ID 欄的工作表 ───────── */
+
+function nextId(rows, map) {
+  return rows.reduce(function (m, r) { return Math.max(m, Number(r[map.id]) || 0) }, 0) + 1
+}
+
+function rowIndexOfId(rows, map, id) {
+  for (var i = 0; i < rows.length; i++) if (Number(rows[i][map.id]) === Number(id)) return i + 2
+  return -1
+}
+
+/** 把 values 依 map 寫回整列（不動 map 以外的欄位） */
+function writeMapped(sheet, map, rowIndex, values) {
+  var range = sheet.getRange(rowIndex, 1, 1, map._width)
+  var row = range.getValues()[0]
+  Object.keys(values).forEach(function (k) { row[map[k]] = values[k] })
+  range.setNumberFormat('@')
+  range.setValues([row])
+}
+
+/** 與相鄰同類列對調（dir: 'up' | 'down'）；回傳整份新順序 */
+function moveRow(sheet, map, id, dir, sameGroup, toItem) {
+  var rows = readRows(sheet, map)
+  var idx = -1
+  for (var i = 0; i < rows.length; i++) if (Number(rows[i][map.id]) === Number(id)) idx = i
+  if (idx < 0) throw apiError('NOT_FOUND', '找不到這筆資料，可能已被刪除')
+  var step = dir === 'up' ? -1 : 1
+  var j = idx + step
+  while (j >= 0 && j < rows.length && !sameGroup(rows[idx], rows[j])) j += step
+  if (j < 0 || j >= rows.length) throw apiError('VALIDATION', '已經在最前面或最後面了')
+  var a = sheet.getRange(idx + 2, 1, 1, map._width)
+  var b = sheet.getRange(j + 2, 1, 1, map._width)
+  var av = a.getValues()
+  a.setValues(b.getValues())
+  b.setValues(av)
+  return readRows(sheet, map)
+    .filter(function (r) { return String(r[map.id]).trim() !== '' })
+    .map(function (r) { return toItem(r, map) })
+}
+
+/* ───────── 資料下載 ───────── */
+
+function downloadsSheet() { return sheetByGid(DOWNLOADS_GID, '資料下載') }
+function downloadsMap(sheet) { return columnMap(sheet, DOWNLOAD_HEADERS, '資料下載') }
+
+function rowToDownload(row, map) {
+  return {
+    id: Number(row[map.id]),
+    n: String(row[map.n]).trim(),
+    group: String(row[map.group]).trim(),
+    groupEn: String(row[map.groupEn]).trim(),
+    name: String(row[map.name]).trim(),
+    nameEn: String(row[map.nameEn]).trim(),
+    ext: String(row[map.ext]).trim(),
+    href: String(row[map.href]).trim(),
+    visible: !/^(n|no|否|0)$/i.test(String(row[map.visible]).trim()),
+  }
+}
+
+function listDownloads() {
+  var sheet = downloadsSheet()
+  var map = downloadsMap(sheet)
+  return readRows(sheet, map)
+    .filter(function (r) { return String(r[map.id]).trim() !== '' })
+    .map(function (r) { return rowToDownload(r, map) })
+}
+
+function validateDownload(input) {
+  var item = input || {}
+  var n = clean(item.n, 10)
+  if (!/^[0-9A-Za-z]{1,10}$/.test(n)) throw apiError('VALIDATION', '分類編號只能是英數字（例如 01、05）')
+  var group = clean(item.group, 100)
+  if (!group) throw apiError('VALIDATION', '請填寫分類名稱')
+  var name = clean(item.name, 300)
+  if (!name) throw apiError('VALIDATION', '請填寫檔名')
+  var href = clean(item.href, 1000)
+  if (!/^https?:\/\/\S+$/.test(href)) throw apiError('VALIDATION', '檔案連結需以 http:// 或 https:// 開頭，且不能有空白')
+  var ext = clean(item.ext, 10).toUpperCase().replace(/[^0-9A-Z]/g, '')
+  if (!ext) throw apiError('VALIDATION', '請填寫格式（例如 PDF、DOC）')
+  return {
+    n: n,
+    group: group,
+    groupEn: clean(item.groupEn, 200),
+    name: name,
+    nameEn: clean(item.nameEn, 500),
+    ext: ext,
+    href: href,
+    visible: item.visible === false ? 'N' : 'Y',
+  }
+}
+
+/** 新列插在同分類最後一列之後；沒有同分類時放到最下面 */
+function insertIndexFor(rows, map, n) {
+  var last = -1
+  for (var i = 0; i < rows.length; i++) if (String(rows[i][map.n]).trim() === n) last = i
+  return last < 0 ? rows.length + 2 : last + 3
+}
+
+function createDownload(input, user) {
+  var v = validateDownload(input)
+  var sheet = downloadsSheet()
+  var map = downloadsMap(sheet)
+  var rows = readRows(sheet, map)
+  var id = nextId(rows, map)
+  var at = insertIndexFor(rows, map, v.n)
+  if (at <= sheet.getLastRow()) sheet.insertRowBefore(at)
+  v.id = String(id)
+  writeMapped(sheet, map, at, v)
+  console.log('createDownload', user, id)
+  return rowToDownload(sheet.getRange(at, 1, 1, map._width).getValues()[0], map)
+}
+
+function updateDownload(id, input, user) {
+  var v = validateDownload(input)
+  var sheet = downloadsSheet()
+  var map = downloadsMap(sheet)
+  var at = rowIndexOfId(readRows(sheet, map), map, id)
+  if (at < 0) throw apiError('NOT_FOUND', '找不到這份文件，可能已被刪除')
+  v.id = String(Number(id))
+  writeMapped(sheet, map, at, v)
+  console.log('updateDownload', user, id)
+  return rowToDownload(sheet.getRange(at, 1, 1, map._width).getValues()[0], map)
+}
+
+function deleteDownload(id, user) {
+  var sheet = downloadsSheet()
+  var map = downloadsMap(sheet)
+  var at = rowIndexOfId(readRows(sheet, map), map, id)
+  if (at < 0) throw apiError('NOT_FOUND', '找不到這份文件，可能已被刪除')
+  sheet.deleteRow(at)
+  console.log('deleteDownload', user, id)
+  return Number(id)
+}
+
+/** 只在同一個分類裡上下移動，分類之間的順序不會被打亂 */
+function moveDownload(id, dir, user) {
+  var sheet = downloadsSheet()
+  var map = downloadsMap(sheet)
+  console.log('moveDownload', user, id, dir)
+  return moveRow(sheet, map, id, dir === 'up' ? 'up' : 'down', function (a, b) {
+    return String(a[map.n]).trim() === String(b[map.n]).trim()
+  }, rowToDownload)
+}
+
+/* ───────── 人才發展 ───────── */
+
+function careersSheet() { return sheetByName(CAREERS_SHEET) }
+function careersMap(sheet) { return columnMap(sheet, CAREER_HEADERS, CAREERS_SHEET) }
+
+function rowToCareer(row, map) {
+  return {
+    id: Number(row[map.id]),
+    kind: CAREER_KINDS[String(row[map.kind]).trim()] || 'job',
+    title: String(row[map.title]).trim(),
+    titleEn: String(row[map.titleEn]).trim(),
+    place: String(row[map.place]).trim(),
+    nature: String(row[map.nature]).trim(),
+    period: String(row[map.period]).trim(),
+    body: String(row[map.body]).replace(/\r\n?/g, '\n').trim(),
+    bodyEn: String(row[map.bodyEn]).replace(/\r\n?/g, '\n').trim(),
+    href: String(row[map.href]).trim(),
+    visible: !/^(n|no|否|0)$/i.test(String(row[map.visible]).trim()),
+  }
+}
+
+function listCareers() {
+  var sheet = careersSheet()
+  var map = careersMap(sheet)
+  return readRows(sheet, map)
+    .filter(function (r) { return String(r[map.id]).trim() !== '' })
+    .map(function (r) { return rowToCareer(r, map) })
+}
+
+function validateCareer(input) {
+  var item = input || {}
+  var kind = CAREER_KIND_LABELS[String(item.kind || '').trim()]
+  if (!kind) throw apiError('VALIDATION', '類型只能是職缺或教育訓練')
+  var title = clean(item.title, 200)
+  if (!title) throw apiError('VALIDATION', '請填寫標題')
+  var body = clean(item.body, 4000)
+  if (!body) throw apiError('VALIDATION', '請填寫說明')
+  var href = clean(item.href, 1000)
+  if (href && !/^(https?:\/\/|mailto:)\S+$/.test(href)) {
+    throw apiError('VALIDATION', '連結需以 http://、https:// 或 mailto: 開頭，且不能有空白')
+  }
+  return {
+    kind: kind,
+    title: title,
+    titleEn: clean(item.titleEn, 300),
+    place: clean(item.place, 100),
+    nature: clean(item.nature, 100),
+    period: clean(item.period, 100),
+    body: body,
+    bodyEn: clean(item.bodyEn, 6000),
+    href: href,
+    visible: item.visible === false ? 'N' : 'Y',
+  }
+}
+
+function createCareer(input, user) {
+  var v = validateCareer(input)
+  var sheet = careersSheet()
+  var map = careersMap(sheet)
+  var rows = readRows(sheet, map)
+  var id = nextId(rows, map)
+  var at = rows.length + 2
+  v.id = String(id)
+  writeMapped(sheet, map, at, v)
+  console.log('createCareer', user, id)
+  return rowToCareer(sheet.getRange(at, 1, 1, map._width).getValues()[0], map)
+}
+
+function updateCareer(id, input, user) {
+  var v = validateCareer(input)
+  var sheet = careersSheet()
+  var map = careersMap(sheet)
+  var at = rowIndexOfId(readRows(sheet, map), map, id)
+  if (at < 0) throw apiError('NOT_FOUND', '找不到這筆資料，可能已被刪除')
+  v.id = String(Number(id))
+  writeMapped(sheet, map, at, v)
+  console.log('updateCareer', user, id)
+  return rowToCareer(sheet.getRange(at, 1, 1, map._width).getValues()[0], map)
+}
+
+function deleteCareer(id, user) {
+  var sheet = careersSheet()
+  var map = careersMap(sheet)
+  var at = rowIndexOfId(readRows(sheet, map), map, id)
+  if (at < 0) throw apiError('NOT_FOUND', '找不到這筆資料，可能已被刪除')
+  sheet.deleteRow(at)
+  console.log('deleteCareer', user, id)
+  return Number(id)
+}
+
+/** 只在同一個類型（職缺／教育訓練）裡上下移動 */
+function moveCareer(id, dir, user) {
+  var sheet = careersSheet()
+  var map = careersMap(sheet)
+  console.log('moveCareer', user, id, dir)
+  return moveRow(sheet, map, id, dir === 'up' ? 'up' : 'down', function (a, b) {
+    return String(a[map.kind]).trim() === String(b[map.kind]).trim()
+  }, rowToCareer)
+}
+
+/* ───────── 一次性安裝 ───────── */
+
+/**
+ * 在編輯器手動執行一次：
+ * - 「資料下載」補上 ID 欄並從 1 開始編號（已有的不動）
+ * - 建立「人才發展」工作表與欄位（已存在就不動），並印出它的 gid
+ */
+function setupAdminSheets() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID)
+  var downloads = downloadsSheet()
+  var header = downloads.getRange(1, 1, 1, downloads.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim() })
+  if (header.indexOf(DOWNLOAD_HEADERS.id) < 0) {
+    var col = downloads.getLastColumn() + 1
+    downloads.getRange(1, col).setValue(DOWNLOAD_HEADERS.id).setFontWeight('bold')
+    header.push(DOWNLOAD_HEADERS.id)
+  }
+  var map = downloadsMap(downloads)
+  var rows = readRows(downloads, map)
+  var next = nextId(rows, map)
+  var ids = rows.map(function (r) {
+    var has = String(r[map.name]).trim() || String(r[map.href]).trim()
+    var id = String(r[map.id]).trim()
+    if (!has) return ['']
+    return [id || String(next++)]
+  })
+  if (ids.length) {
+    var idRange = downloads.getRange(2, map.id + 1, ids.length, 1)
+    idRange.setNumberFormat('@')
+    idRange.setValues(ids)
+  }
+
+  var careers = ss.getSheetByName(CAREERS_SHEET)
+  if (!careers) {
+    careers = ss.insertSheet(CAREERS_SHEET)
+    var labels = Object.keys(CAREER_HEADERS).map(function (k) { return CAREER_HEADERS[k] })
+    careers.getRange(1, 1, 1, labels.length).setValues([labels]).setFontWeight('bold')
+    careers.setFrozenRows(1)
+  }
+
+  Logger.log([
+    '資料下載：ID 欄已就緒，共 ' + ids.filter(function (r) { return r[0] }).length + ' 筆已編號。',
+    '人才發展 gid（填到 src/config/content-sheet.ts 的 careers）= ' + careers.getSheetId(),
+    '',
+    '記得把「人才發展」一併發布到網路：檔案 → 共用 → 發布到網路 → 整份文件 → CSV。',
+  ].join('\n'))
 }

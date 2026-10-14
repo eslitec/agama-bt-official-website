@@ -23,6 +23,8 @@ export const CONTENT_SHEET = {
     // -1 代表尚未建立，前端會隱藏「通過驗證業者」區塊。
     operators: 2090864750,
     syncStatus: 534394208,
+    // 人才發展（admin-api.gs 的 setupAdminSheets() 建立並印出 gid）；-1 代表尚未建立
+    careers: -1,
   },
 } as const
 

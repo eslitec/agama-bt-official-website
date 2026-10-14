@@ -27,6 +27,7 @@ footer.site-footer
       nav.site-footer__col(:aria-label="t('footer.service')")
         span.site-footer__label {{ t('footer.service') }}
         RouterLink(:to="{ name: 'farm' }") {{ t('nav.farm') }}
+        RouterLink(:to="{ name: 'career' }") {{ t('nav.career') }}
         RouterLink(:to="{ name: 'contact' }") {{ t('topbar.feedback') }}
         RouterLink(:to="{ name: 'privacy' }") {{ t('footer.privacy') }}
         RouterLink.site-footer__admin(:to="{ name: 'login' }" rel="nofollow") {{ t('footer.adminLogin') }}
