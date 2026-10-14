@@ -11,20 +11,27 @@ const props = withDefaults(
     nameEn?: string
     href: string
     ext: string
+    /** 同一份文件的其他格式；有值時整列不再是連結，改在右側列出各格式的下載連結 */
+    more?: { ext: string; href: string }[]
     /** card：白底卡片；tile：米色底磚；feature：收費文件大卡 */
     variant?: 'card' | 'tile' | 'feature'
     icon?: string
   }>(),
-  { nameEn: undefined, variant: 'card', icon: 'description' },
+  { nameEn: undefined, more: undefined, variant: 'card', icon: 'description' },
 )
 
 const { t } = useI18n()
 const { pick, langOf } = useLocalized()
 const label = computed(() => pick(props.name, props.nameEn))
+/** 所有格式（主要格式排第一） */
+const formats = computed(() => [{ ext: props.ext, href: props.href }, ...(props.more ?? [])])
+const multi = computed(() => formats.value.length > 1)
 </script>
 
 <template lang="pug">
+//- 只有一種格式：整列就是下載連結
 a.file-link(
+  v-if="!multi"
   :class="`file-link--${variant}`"
   :href="href"
   target="_blank"
@@ -34,6 +41,19 @@ a.file-link(
   MIcon.file-link__icon(:name="icon")
   span.file-link__name(:lang="langOf(nameEn)") {{ label }}
   span.file-link__ext {{ ext }} ↓
+//- 多種格式：檔名不是連結，右側每種格式各一個連結
+.file-link.file-link--multi(v-else :class="`file-link--${variant}`")
+  MIcon.file-link__icon(:name="icon")
+  span.file-link__name(:lang="langOf(nameEn)") {{ label }}
+  span.file-link__formats
+    a.file-link__ext.file-link__ext--link(
+      v-for="f in formats"
+      :key="f.href"
+      :href="f.href"
+      target="_blank"
+      rel="noopener"
+      :aria-label="`${t('common.fileLabel', { name: label, ext: f.ext })} ${t('common.externalLink')}`"
+    ) {{ f.ext }} ↓
 </template>
 
 <style scoped lang="scss">
@@ -64,6 +84,28 @@ a.file-link(
     font-size: 12px;
     color: $c-muted;
     white-space: nowrap;
+
+    &--link {
+      color: $c-primary;
+      @include focus-ring;
+      @include hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  &__formats {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  // 多格式時整列不是連結，取消整列的 hover 位移
+  &--multi {
+    @include hover {
+      transform: none;
+    }
   }
 
   &--card {

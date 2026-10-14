@@ -203,6 +203,44 @@ describe('英文欄位', () => {
     expect(Object.keys(other!).filter((k) => k.endsWith('En'))).toEqual([])
   })
 
+  it('資料下載：同分類中檔名相同的列合併成一筆，其他格式放進 more', () => {
+    const rows = [
+      {
+        分類編號: '05',
+        分類名稱: '驗證手冊與作業程序',
+        檔名: '某某手冊',
+        格式: 'PDF',
+        檔案連結: 'https://example.tw/a.pdf',
+        顯示: 'Y',
+      },
+      {
+        分類編號: '05',
+        分類名稱: '驗證手冊與作業程序',
+        檔名: '某某手冊',
+        格式: 'WORD',
+        檔案連結: 'https://example.tw/a.docx',
+        顯示: 'Y',
+      },
+      {
+        分類編號: '05',
+        分類名稱: '驗證手冊與作業程序',
+        檔名: '另一份手冊',
+        格式: 'PDF',
+        檔案連結: 'https://example.tw/b.pdf',
+        顯示: 'Y',
+      },
+    ]
+    const files = toDownloadGroups(rows)[0]!.files
+    expect(files).toHaveLength(2)
+    expect(files[0]).toEqual({
+      name: '某某手冊',
+      ext: 'PDF',
+      href: 'https://example.tw/a.pdf',
+      more: [{ ext: 'WORD', href: 'https://example.tw/a.docx' }],
+    })
+    expect(files[1]!.more).toBeUndefined()
+  })
+
   it('附件名稱英文對照（開頭比對、保留後綴）', () => {
     expect(attachmentLabelEn('公告連結')).toBe('Announcement')
     expect(attachmentLabelEn('附件連結')).toBe('Attachment')

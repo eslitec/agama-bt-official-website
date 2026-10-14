@@ -33,6 +33,8 @@ export interface DownloadFile {
   nameEn?: string
   ext: FileExt
   href: string
+  /** 同一份文件的其他格式（檔名相同的列會合併成一筆，例如同時有 PDF 與 WORD） */
+  more?: { ext: FileExt; href: string }[]
 }
 
 export interface DownloadGroup {

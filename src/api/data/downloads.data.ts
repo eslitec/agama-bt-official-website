@@ -183,22 +183,18 @@ export const downloadGroupsData: DownloadGroup[] = [
         href: driveFile('1dOQ4nkVLqwhITerdPArKQLgMwI1LRGMG'),
       },
       {
-        name: 'TT-10-05 農產品驗證作業手冊 2.1',
-        nameEn: 'TT-10-05 Agricultural product certification manual 2.1',
-        ext: 'PDF',
-        href: driveFile('1xwESW2O392ZoNdhVNckAgQk8G9qyDdeB'),
-      },
-      {
         name: '產銷履歷集團驗證品質管理手冊簡版',
         nameEn: 'Traceability group certification quality manual (short version)',
         ext: 'PDF',
         href: driveFile('1X1SCHgvHd4eH1mitp-abPl7O_fb2XZEW'),
+        more: [{ ext: 'WORD', href: driveFile('1DbOY-TLFmt22bjqM_7fTR04bvC91tfV3') }],
       },
       {
-        name: '產銷履歷集團驗證品質管理手冊簡版',
-        nameEn: 'Traceability group certification quality manual (short version)',
-        ext: 'WORD',
-        href: driveFile('1DbOY-TLFmt22bjqM_7fTR04bvC91tfV3'),
+        name: '農糧類產銷履歷集團驗證品質管理文件參考手冊（簡版）－農糧署版',
+        nameEn:
+          'Traceability group certification quality manual for agri-food (short version) – Agriculture and Food Agency edition',
+        ext: 'PDF',
+        href: 'https://taft.moa.gov.tw/dl-1746-f29d1892c4e14d39a414def8b41e2f72.html',
       },
       {
         name: 'TT-31 驗證之增列、結束、減列、暫時停止及終止作業程序書 2.4',

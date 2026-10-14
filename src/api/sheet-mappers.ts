@@ -130,7 +130,10 @@ export function toDownloadGroups(records: SheetRecord[]): DownloadGroup[] {
       ...optional('titleEn', titlesEn.get(n)),
       files: [],
     }
-    group.files.push(file)
+    // 檔名相同的列視為同一份文件的不同格式，合併成一筆
+    const same = group.files.find((f) => f.name === file.name)
+    if (same) same.more = [...(same.more ?? []), { ext: file.ext, href: file.href }]
+    else group.files.push(file)
     groups.set(n, group)
   }
   return [...groups.values()].sort((a, b) => a.n.localeCompare(b.n, undefined, { numeric: true }))
