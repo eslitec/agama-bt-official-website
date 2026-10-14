@@ -2,9 +2,9 @@ import type { MessageSchema } from './zh-TW'
 
 const en: MessageSchema = {
   site: {
-    name: 'NCKU Intelligent Research Certification',
-    nameEn: 'NCKU INTELLIGENT RESEARCH CERTIFICATION',
-    company: 'NCKU Intelligent Research International Certification Co., Ltd.',
+    name: 'Chengda Agama International Certification',
+    nameEn: 'CHENGDA AGAMA INTERNATIONAL CERTIFICATION',
+    company: 'Chengda Agama International Certification Corporation',
     tagline: 'TAF-accredited certification body for organic and traceable agricultural products',
     address: 'No. 15-1, Sec. 2, Zhongzheng S. Rd., Guiren Dist., Tainan City, Taiwan',
     values: 'Quality · Dedication · Impartiality · Integrity',
@@ -90,7 +90,7 @@ const en: MessageSchema = {
   about: {
     eyebrow: 'ABOUT US',
     title: 'About Us',
-    p1: 'NCKU Intelligent Research International Certification is a TAF-accredited certification body for organic and traceable agricultural products, guided by the core values of quality certification, dedication, impartial service and integrity.',
+    p1: 'Chengda Agama International Certification is a TAF-accredited certification body for organic and traceable agricultural products, guided by the core values of quality certification, dedication, impartial service and integrity.',
     p2: 'Through an impartial and rigorous certification process, we ensure reliability and traceability from farm to table, raising the quality, hygiene and safety of agricultural and aquatic products and doing our utmost for food safety.',
     scopeTitle: 'Certification scope',
     scopeOrganic: 'Organic: organic crops; organic processing, packaging and distribution',
@@ -403,7 +403,7 @@ const en: MessageSchema = {
     sections: [
       {
         title: '1. Collector',
-        body: ['NCKU Intelligent Research International Certification Co., Ltd. (the "Company").'],
+        body: ['Chengda Agama International Certification Corporation (the "Company").'],
       },
       {
         title: '2. Purposes',

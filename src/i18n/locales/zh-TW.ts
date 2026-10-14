@@ -1,7 +1,7 @@
 const zhTW = {
   site: {
     name: '成大智研國際驗證',
-    nameEn: 'NCKU INTELLIGENT RESEARCH CERTIFICATION',
+    nameEn: 'CHENGDA AGAMA INTERNATIONAL CERTIFICATION',
     company: '成大智研國際驗證股份有限公司',
     tagline: '財團法人全國認證基金會（TAF）認證之有機及產銷履歷驗證機構',
     address: '臺南市歸仁區中正南路二段 15 之 1 號',

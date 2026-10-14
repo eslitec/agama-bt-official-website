@@ -8,7 +8,7 @@ export const stepsData: ProcessStep[] = [
     titleEn: 'Application',
     body: '農產品經營者於驗證申請前至本公司網站下載或向本公司索取相關驗證依據資料，並加以閱讀驗證依據、了解相關法令規範、權利、義務及罰則；依申請驗證範圍檢附「驗證申請書」及備妥應檢附文件，送至「臺南市歸仁區中正南路二段15之1號 成大智研國際驗證股份有限公司收」。',
     bodyEn:
-      'Before applying, operators download the certification criteria from our website or request them from us, read the criteria and understand the relevant regulations, rights, obligations and penalties. According to the scope of certification, send the application form and required documents to NCKU Intelligent Research International Certification Co., Ltd., No. 15-1, Sec. 2, Zhongzheng S. Rd., Guiren Dist., Tainan City.',
+      'Before applying, operators download the certification criteria from our website or request them from us, read the criteria and understand the relevant regulations, rights, obligations and penalties. According to the scope of certification, send the application form and required documents to Chengda Agama International Certification Corporation, No. 15-1, Sec. 2, Zhongzheng S. Rd., Guiren Dist., Tainan City.',
   },
   {
     n: '2',
