@@ -16,7 +16,7 @@
  *   來源是「每批追溯碼一筆」的明細、由新到舊，$top 上限 10000，且 $skip 越深越慢，
  *   因此每日只取最近 TAP_MAX_PAGES 批，並與試算表既有資料「累積合併」：
  *   抓到的覆蓋同一業者，先前抓過、效期未過的保留，效期已過的自動移除。
- *   要補齊更舊的業者，手動重複執行 backfillTapOperators() 直到顯示「已完成」。
+ *   要補齊更舊的業者，手動執行一次 backfillTapOperators()，它會自己排程跑到完成。
  *   注意：此資料集來源自 2025/12/17 起停止更新，同步仍會進行，網站會顯示來源日期。
  */
 
@@ -29,11 +29,14 @@ var ORGANIC_API = 'https://data.moa.gov.tw/Service/OpenData/Traceability/Traceab
 var TAP_API = 'https://data.moa.gov.tw/Service/OpenData/Resume/ResumeData_Plus.aspx'
 var ORGANIC_PAGE = 3000 // 單批筆數（整包約 7.8MB，分批可降低記憶體壓力）
 var ORGANIC_MAX_PAGES = 12
-var TAP_PAGE = 10000 // 產銷履歷單批筆數（來源上限 10000）
-var TAP_MAX_PAGES = 4 // 每日同步往回取幾批（約 8 個月明細；$skip 越深越慢）
-var TAP_BACKFILL_PAGES = 2 // backfillTapOperators() 每次再往回加抓幾批
-var TAP_BACKFILL_MAX_PAGE = 11 // 回補最深到第幾批（約 2 年）
+// 產銷履歷每筆約 2.6 KB，單批 10000 筆就是 26 MB，Apps Script 光 JSON.parse 就會吃掉
+// 大半個 6 分鐘上限（實測逾時），因此單批壓到 2000 筆、每次執行只抓幾批。
+var TAP_PAGE = 2000 // 產銷履歷單批筆數（來源 $top 上限 10000，但解析成本太高）
+var TAP_MAX_PAGES = 3 // 每日同步往回取幾批（淺層分頁，約一分鐘內跑完）
+var TAP_BACKFILL_PAGES = 3 // backfillTapOperators() 每次再往回加抓幾批
+var TAP_BACKFILL_MAX_PAGE = 24 // 回補最深到第幾批（約 50000 筆明細）
 var TAP_BACKFILL_KEY = 'TAP_BACKFILL_NEXT_PAGE'
+var TAP_BACKFILL_FN = 'backfillTapOperators'
 
 var OPERATOR_HEADERS = ['類別', '業者名稱', '縣市', '品項', '證書字號', '效期', '業者代號']
 
@@ -53,7 +56,7 @@ function setupOpenDataSync() {
       SYNC_STATUS_SHEET + ' = ' + status.getSheetId(),
       '',
       '記得把這兩個工作表「發布到網路」：檔案 → 共用 → 發布到網路 → 整份文件 → CSV。',
-      '產銷履歷要補更舊的業者，再手動執行 backfillTapOperators() 直到顯示「已完成」。',
+      '產銷履歷要補更舊的業者，手動執行一次 backfillTapOperators()，之後會自動跑完。',
     ].join('\n'),
   )
 }
@@ -236,14 +239,16 @@ function fetchTapRange(startPage, pages) {
 }
 
 /**
- * 手動加抓更舊的產銷履歷明細（補齊久未出貨、但證書仍有效的業者）。
- * 每執行一次往回加抓 TAP_BACKFILL_PAGES 批，進度存在指令碼屬性，
- * 抓到底或超過 TAP_BACKFILL_MAX_PAGE 就停止。可重複執行直到執行記錄顯示「已完成」。
+ * 加抓更舊的產銷履歷明細（補齊久未出貨、但證書仍有效的業者）。
+ * 執行一次會往回加抓 TAP_BACKFILL_PAGES 批、把進度存進指令碼屬性，並自動裝一個
+ * 每 5 分鐘的排程繼續往下抓；抓到底或超過 TAP_BACKFILL_MAX_PAGE 就自己把排程移除。
+ * 所以只要手動執行一次，剩下的會自己跑完（執行記錄會出現「已完成」）。
  */
 function backfillTapOperators() {
   var props = PropertiesService.getScriptProperties()
   var startPage = Number(props.getProperty(TAP_BACKFILL_KEY) || TAP_MAX_PAGES)
   if (startPage > TAP_BACKFILL_MAX_PAGE) {
+    removeBackfillTrigger()
     Logger.log('產銷履歷回補：已完成（已達回溯上限）')
     return
   }
@@ -264,6 +269,8 @@ function backfillTapOperators() {
 
   var done = fetched.reachedEnd || fetched.nextPage > TAP_BACKFILL_MAX_PAGE
   props.setProperty(TAP_BACKFILL_KEY, String(done ? TAP_BACKFILL_MAX_PAGE + 1 : fetched.nextPage))
+  if (done) removeBackfillTrigger()
+  else ensureBackfillTrigger()
   setStatus(status, '產銷履歷－筆數', String(tap.length))
   setStatus(
     status,
@@ -276,9 +283,24 @@ function backfillTapOperators() {
       '產銷履歷回補：第 ' + startPage + '～' + (fetched.nextPage - 1) + ' 批',
       '明細最舊日期：' + (fetched.oldest || '（無）'),
       '業者數：' + before + ' → ' + tap.length,
-      done ? '已完成，不需再執行。' : '尚未抓完，請再執行一次 backfillTapOperators()。',
+      done ? '已完成，排程已移除。' : '尚未抓完，已排程 5 分鐘後自動繼續。',
     ].join('\n'),
   )
+}
+
+/** 裝一個每 5 分鐘的回補排程（已經有就不重複裝） */
+function ensureBackfillTrigger() {
+  var has = ScriptApp.getProjectTriggers().some(function (t) {
+    return t.getHandlerFunction() === TAP_BACKFILL_FN
+  })
+  if (!has) ScriptApp.newTrigger(TAP_BACKFILL_FN).timeBased().everyMinutes(5).create()
+}
+
+/** 回補完成後把自己的排程移除 */
+function removeBackfillTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === TAP_BACKFILL_FN) ScriptApp.deleteTrigger(t)
+  })
 }
 
 /**
