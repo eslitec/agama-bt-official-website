@@ -82,7 +82,7 @@ section.admin-list
   header.admin-list__head
     .admin-list__heading
       h1.admin-list__title {{ t('admin.news.title') }}
-      RouterLink.admin-list__public(:to="{ name: 'news' }" target="_blank")
+      RouterLink.admin-list__public(:to="{ name: 'news' }" target="_blank" rel="noopener")
         | {{ t('admin.viewPublic') }}
         span.visually-hidden {{ t('common.externalLink') }}
     RouterLink.btn.btn--primary(:to="{ name: 'adminNewsNew' }")

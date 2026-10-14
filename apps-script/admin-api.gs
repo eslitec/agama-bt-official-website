@@ -26,7 +26,7 @@ var NEWS_GID = 40890007
 var DOWNLOADS_GID = 1702372519
 var CAREERS_SHEET = '人才發展'
 // 意見反應收件信箱；留空則寄給這個 Apps Script 專案的擁有者
-var CONTACT_TO = 'caicbetter@gmail.com'
+var CONTACT_TO = 'hoganalin@gmail.com'
 var CONTACT_MAX_PER_10MIN = 10
 var TOKEN_TTL_MS = 8 * 60 * 60 * 1000
 var HASH_ROUNDS = 1000

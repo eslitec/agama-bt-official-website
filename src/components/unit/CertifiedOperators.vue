@@ -93,6 +93,11 @@ const updatedText = computed(() => {
   return parts.join('　')
 })
 
+/** 模板裡不要寫 TS 型別轉換：執行階段的模板編譯器看不懂 `as`，整個元件會編不出來 */
+function onPerPage(e: Event): void {
+  setParam('osize', (e.target as HTMLSelectElement).value)
+}
+
 const empty = computed(() => !loading.value && !error.value && !items.value.length)
 </script>
 
@@ -162,10 +167,7 @@ section.operators(v-if="enabled && !empty")
         p.operators__count(aria-live="polite") {{ t('unit.operators.count', { n: filtered.length }) }}
         label.operators__size
           span.visually-hidden {{ t('unit.operators.perPageLabel') }}
-          select.operators__select(
-            :value="perPage"
-            @change="setParam('osize', ($event.target as HTMLSelectElement).value)"
-          )
+          select.operators__select(:value="perPage" @change="onPerPage")
             option(v-for="n in PER_PAGE_OPTIONS" :key="n" :value="n") {{ t('unit.operators.perPage', { n }) }}
 
       ul.operators__list

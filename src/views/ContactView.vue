@@ -232,7 +232,8 @@ function reset(): void {
             span.checkbox__box(aria-hidden="true")
             span.checkbox__text
               | {{ t('contact.privacyBefore') }}
-              RouterLink(:to="{ name: 'privacy' }" target="_blank") {{ t('contact.privacyDoc') }}
+              RouterLink(:to="{ name: 'privacy' }" target="_blank" rel="noopener") {{ t('contact.privacyDoc') }}
+              span.visually-hidden {{ t('common.externalLink') }}
               | {{ t('contact.privacyAfter') }}
           p.field__error(v-if="errors.privacy" :id="`${idOf('privacy')}-error`") {{ errors.privacy }}
 

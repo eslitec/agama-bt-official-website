@@ -98,7 +98,7 @@ npm run test        # Vitest
 
 **GitHub Pages 沒有表單後端**，所以走第三條：`.github/workflows/deploy-pages.yml` 把 `VITE_CONTACT_API_URL` 設成與 `VITE_ADMIN_API_URL` 相同的 `/exec` 網址，`admin-api.gs` 的 `contact` 動作收到後寄信。
 
-- **收件信箱**：`admin-api.gs` 最上面的 `CONTACT_TO`（目前是 `caicbetter@gmail.com`）；留空則寄給 Apps Script 專案的擁有者。信件的「回覆」會直接回到來信者的 E-mail。
+- **收件信箱**：`admin-api.gs` 最上面的 `CONTACT_TO`（目前是 `hoganalin@gmail.com`）；留空則寄給 Apps Script 專案的擁有者。信件的「回覆」會直接回到來信者的 E-mail。
 - **不存進試算表**：內容試算表是「發布到網路」的，把來信者的姓名、電話、信箱寫進去等於公開，所以只寄信。要留存底的話 Gmail 本身就是紀錄。
 - **防濫用**：蜜罐欄位（真人看不到，填了就只回成功不寄信）、各欄位長度上限、全站每 10 分鐘最多 `CONTACT_MAX_PER_10MIN`（10）封；超過會回「請稍後再送出」並附上公司信箱。沒有圖形驗證碼，若之後收到大量垃圾信可再加。
 - 改 `admin-api.gs` 之後記得 **部署 → 管理部署作業 → 編輯 → 版本「新版本」**，否則線上跑的還是舊版。
