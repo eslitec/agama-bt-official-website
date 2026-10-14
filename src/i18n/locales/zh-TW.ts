@@ -160,6 +160,7 @@ const zhTW = {
       lead: '以下為經本公司驗證、狀態為「通過」的業者；資料每天自動從農業部農業資料開放平臺更新。',
       source: '資料來源：農業部農業資料開放平臺',
       updatedOne: '{type}：資料更新 {synced}（來源資料日期 {source}）',
+      updatedOneLive: '{type}：資料更新 {synced}（來源即時更新）',
       unknown: '未知',
       typeLabel: '驗證類別',
       cityLabel: '縣市',

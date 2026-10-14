@@ -56,9 +56,7 @@ const matches = (o: CertifiedOperator, q: string): boolean =>
   [o.name, o.city, o.products, o.certNo ?? ''].some((v) => v.toLowerCase().includes(q))
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
-  return byType.value.filter(
-    (o) => (!city.value || o.city === city.value) && (!q || matches(o, q)),
-  )
+  return byType.value.filter((o) => (!city.value || o.city === city.value) && (!q || matches(o, q)))
 })
 const pageResult = computed(() => paginate(filtered.value, page.value, perPage.value))
 
@@ -83,13 +81,15 @@ const sync = computed(() => data.value.sync)
 const updatedText = computed(() => {
   const parts = (['organic', 'tap'] as OperatorType[])
     .filter((k) => sync.value[k]?.syncedAt || sync.value[k]?.sourceDate)
-    .map((k) =>
-      t('unit.operators.updatedOne', {
+    .map((k) => {
+      const source = sync.value[k]?.sourceDate
+      // 來源沒有「資料日期」欄位時（有機是即時資料），只顯示同步時間
+      return t(source ? 'unit.operators.updatedOne' : 'unit.operators.updatedOneLive', {
         type: t(`unit.operators.${k}`),
         synced: sync.value[k]?.syncedAt ?? t('unit.operators.unknown'),
-        source: sync.value[k]?.sourceDate ?? t('unit.operators.unknown'),
-      }),
-    )
+        source: source ?? t('unit.operators.unknown'),
+      })
+    })
   return parts.join('　')
 })
 
@@ -169,22 +169,25 @@ section.operators(v-if="enabled && !empty")
             option(v-for="n in PER_PAGE_OPTIONS" :key="n" :value="n") {{ t('unit.operators.perPage', { n }) }}
 
       ul.operators__list
-        li.operator-card(v-for="o in pageResult.items" :key="`${o.type}-${o.certNo || o.orgId || o.name}`")
+        li.operator-card(
+          v-for="o in pageResult.items"
+          :key="`${o.type}-${o.certNo || o.orgId || o.name}`"
+        )
           h3.operator-card__name {{ o.name }}
           dl.operator-card__rows
-            div.operator-card__row
+            .operator-card__row
               dt {{ t('unit.operators.typeLabel') }}
               dd {{ t(`unit.operators.${o.type}`) }}
-            div.operator-card__row(v-if="o.city")
+            .operator-card__row(v-if="o.city")
               dt {{ t('unit.operators.cityLabel') }}
               dd {{ o.city }}
-            div.operator-card__row(v-if="o.products")
+            .operator-card__row(v-if="o.products")
               dt {{ t('unit.operators.products') }}
               dd {{ o.products }}
-            div.operator-card__row(v-if="o.certNo")
+            .operator-card__row(v-if="o.certNo")
               dt {{ t('unit.operators.certNo') }}
               dd {{ o.certNo }}
-            div.operator-card__row(v-if="o.validDate")
+            .operator-card__row(v-if="o.validDate")
               dt {{ t('unit.operators.validDate') }}
               dd {{ o.validDate }}
         li.operators__empty(v-if="!filtered.length") {{ t('unit.operators.empty') }}

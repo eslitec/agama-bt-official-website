@@ -13,6 +13,10 @@
  *   免金鑰、CORS 開放、即時更新；不支援用驗證機構參數過濾，需全量取回後自行過濾。
  * - 產銷履歷：https://data.moa.gov.tw/Service/OpenData/Resume/ResumeData_Plus.aspx
  *   支援 query 參數 CertificationName 在伺服器端過濾（OData $filter 無效）。
+ *   來源是「每批追溯碼一筆」的明細、由新到舊，$top 上限 10000，且 $skip 越深越慢，
+ *   因此每日只取最近 TAP_MAX_PAGES 批，並與試算表既有資料「累積合併」：
+ *   抓到的覆蓋同一業者，先前抓過、效期未過的保留，效期已過的自動移除。
+ *   要補齊更舊的業者，手動重複執行 backfillTapOperators() 直到顯示「已完成」。
  *   注意：此資料集來源自 2025/12/17 起停止更新，同步仍會進行，網站會顯示來源日期。
  */
 
@@ -25,18 +29,13 @@ var ORGANIC_API = 'https://data.moa.gov.tw/Service/OpenData/Traceability/Traceab
 var TAP_API = 'https://data.moa.gov.tw/Service/OpenData/Resume/ResumeData_Plus.aspx'
 var ORGANIC_PAGE = 3000 // 單批筆數（整包約 7.8MB，分批可降低記憶體壓力）
 var ORGANIC_MAX_PAGES = 12
-var TAP_PAGE = 1000 // 產銷履歷每次只取最新一批（資料由新到舊）
+var TAP_PAGE = 10000 // 產銷履歷單批筆數（來源上限 10000）
+var TAP_MAX_PAGES = 4 // 每日同步往回取幾批（約 8 個月明細；$skip 越深越慢）
+var TAP_BACKFILL_PAGES = 2 // backfillTapOperators() 每次再往回加抓幾批
+var TAP_BACKFILL_MAX_PAGE = 11 // 回補最深到第幾批（約 2 年）
+var TAP_BACKFILL_KEY = 'TAP_BACKFILL_NEXT_PAGE'
 
-var OPERATOR_HEADERS = [
-  '類別',
-  '業者名稱',
-  '縣市',
-  '品項',
-  '證書字號',
-  '效期',
-  '業者代號',
-  '資料來源日期',
-]
+var OPERATOR_HEADERS = ['類別', '業者名稱', '縣市', '品項', '證書字號', '效期', '業者代號']
 
 /* ───────── 安裝與排程 ───────── */
 
@@ -54,6 +53,7 @@ function setupOpenDataSync() {
       SYNC_STATUS_SHEET + ' = ' + status.getSheetId(),
       '',
       '記得把這兩個工作表「發布到網路」：檔案 → 共用 → 發布到網路 → 整份文件 → CSV。',
+      '產銷履歷要補更舊的業者，再手動執行 backfillTapOperators() 直到顯示「已完成」。',
     ].join('\n'),
   )
 }
@@ -93,10 +93,13 @@ function syncOpenData() {
   ;['有機', '產銷履歷'].forEach(function (type) {
     var fresh = result[type]
     if (fresh) {
-      rows = rows.concat(fresh.rows)
+      // 有機是完整快照直接覆蓋；產銷履歷只拿得到最近幾批明細，與既有資料累積合併
+      var merged = type === '產銷履歷' ? mergeTapOperators(existing, fresh.rows) : fresh.rows
+      rows = rows.concat(merged)
       setStatus(status, type + '－最後同步成功', formatNow())
-      setStatus(status, type + '－來源資料日期', fresh.sourceDate || '（來源未提供）')
-      setStatus(status, type + '－筆數', String(fresh.rows.length))
+      setStatus(status, type + '－來源資料日期', fresh.sourceDate || '')
+      setStatus(status, type + '－筆數', String(merged.length))
+      if (fresh.oldest) setStatus(status, type + '－本次明細涵蓋起日', fresh.oldest)
     } else {
       rows = rows.concat(
         existing.filter(function (r) {
@@ -120,7 +123,6 @@ function syncOpenData() {
 function fetchOrganicOperators() {
   var rows = []
   var seen = {}
-  var latest = ''
   for (var page = 0; page < ORGANIC_MAX_PAGES; page++) {
     var url = ORGANIC_API + '?$top=' + ORGANIC_PAGE + '&$skip=' + page * ORGANIC_PAGE
     var batch = fetchJson(url)
@@ -133,7 +135,6 @@ function fetchOrganicOperators() {
       if (!sn || seen[sn]) continue
       seen[sn] = true
       var effective = String(r.EffectiveDate || '').trim()
-      if (effective > latest) latest = effective
       rows.push([
         '有機',
         String(r.Name || '').trim(),
@@ -142,51 +143,75 @@ function fetchOrganicOperators() {
         sn,
         effective,
         '',
-        '',
       ])
     }
     if (batch.length < ORGANIC_PAGE) break
   }
   rows.sort(sortByName)
-  return { rows: rows, sourceDate: latest }
+  // 有機資料集是即時的完整快照，來源沒有「資料日期」欄位，留空讓網站只顯示同步時間
+  return { rows: rows, sourceDate: '' }
 }
 
 /* ───────── 產銷履歷 ───────── */
 
-/**
- * 取回本公司最新一批產銷履歷紀錄，依業者代號去重成業者清單。
- * 來源是「每批追溯碼一筆」的明細，所以同一業者會重複出現，取效期最新的一筆。
- */
+/** 每日同步：從最新一批往回取 TAP_MAX_PAGES 批 */
 function fetchTapOperators() {
-  var url =
-    TAP_API +
-    '?$top=' +
-    TAP_PAGE +
-    '&CertificationName=' +
-    encodeURIComponent(COMPANY_NAME)
-  var batch = fetchJson(url)
+  return fetchTapRange(0, TAP_MAX_PAGES)
+}
+
+/**
+ * 取回指定批次範圍的產銷履歷明細，依業者代號去重成業者清單。
+ * 來源是「每批追溯碼一筆」、由新到舊，所以同一業者會重複出現，取效期最新的一筆。
+ */
+function fetchTapRange(startPage, pages) {
   var byOrg = {}
   var latest = ''
-  for (var i = 0; i < batch.length; i++) {
-    var r = batch[i]
-    if (String(r.CertificationName || '').trim() !== COMPANY_NAME) continue
-    var id = String(r.OrgID || '').trim() || String(r.Producer || '').trim()
-    if (!id) continue
-    var valid = String(r.ValidDate || '').trim()
-    var packed = String(r.PackDate || '').trim()
-    if (packed > latest) latest = packed
-    var item = byOrg[id]
-    if (!item) {
-      item = byOrg[id] = {
-        name: String(r.Producer || '').trim(),
-        city: cityOf(r.Place),
-        products: {},
-        valid: valid,
-      }
+  var oldest = ''
+  var reachedEnd = false
+  var page = startPage
+  for (var i = 0; i < pages; i++) {
+    page = startPage + i
+    var url =
+      TAP_API +
+      '?$top=' +
+      TAP_PAGE +
+      '&$skip=' +
+      page * TAP_PAGE +
+      '&CertificationName=' +
+      encodeURIComponent(COMPANY_NAME)
+    var batch = fetchJson(url)
+    if (!batch.length) {
+      reachedEnd = true
+      break
     }
-    if (valid > item.valid) item.valid = valid
-    var product = String(r.ProductName || '').trim()
-    if (product) item.products[product] = true
+    for (var j = 0; j < batch.length; j++) {
+      var r = batch[j]
+      if (String(r.CertificationName || '').trim() !== COMPANY_NAME) continue
+      var id = String(r.OrgID || '').trim() || String(r.Producer || '').trim()
+      if (!id) continue
+      var valid = String(r.ValidDate || '').trim()
+      var packed = String(r.PackDate || '').trim()
+      if (packed) {
+        if (packed > latest) latest = packed
+        if (!oldest || packed < oldest) oldest = packed
+      }
+      var item = byOrg[id]
+      if (!item) {
+        item = byOrg[id] = {
+          name: String(r.Producer || '').trim(),
+          city: cityOf(r.Place),
+          products: {},
+          valid: valid,
+        }
+      }
+      if (valid > item.valid) item.valid = valid
+      var product = String(r.ProductName || '').trim()
+      if (product) item.products[product] = true
+    }
+    if (batch.length < TAP_PAGE) {
+      reachedEnd = true
+      break
+    }
   }
   var rows = Object.keys(byOrg).map(function (id) {
     var item = byOrg[id]
@@ -198,11 +223,95 @@ function fetchTapOperators() {
       '',
       item.valid,
       id,
-      '',
     ]
   })
   rows.sort(sortByName)
-  return { rows: rows, sourceDate: latest }
+  return {
+    rows: rows,
+    sourceDate: latest,
+    oldest: oldest,
+    reachedEnd: reachedEnd,
+    nextPage: page + 1,
+  }
+}
+
+/**
+ * 手動加抓更舊的產銷履歷明細（補齊久未出貨、但證書仍有效的業者）。
+ * 每執行一次往回加抓 TAP_BACKFILL_PAGES 批，進度存在指令碼屬性，
+ * 抓到底或超過 TAP_BACKFILL_MAX_PAGE 就停止。可重複執行直到執行記錄顯示「已完成」。
+ */
+function backfillTapOperators() {
+  var props = PropertiesService.getScriptProperties()
+  var startPage = Number(props.getProperty(TAP_BACKFILL_KEY) || TAP_MAX_PAGES)
+  if (startPage > TAP_BACKFILL_MAX_PAGE) {
+    Logger.log('產銷履歷回補：已完成（已達回溯上限）')
+    return
+  }
+  var ss = SpreadsheetApp.openById(SYNC_SPREADSHEET_ID)
+  var sheet = ensureSheet(ss, OPERATORS_SHEET, OPERATOR_HEADERS)
+  var status = ensureSheet(ss, SYNC_STATUS_SHEET, ['項目', '值'])
+  var existing = readOperators(sheet)
+  var before = existing.filter(function (row) {
+    return String(row[0]).trim() === '產銷履歷'
+  }).length
+
+  var fetched = fetchTapRange(startPage, TAP_BACKFILL_PAGES)
+  var tap = mergeTapOperators(existing, fetched.rows)
+  var organic = existing.filter(function (row) {
+    return String(row[0]).trim() === '有機'
+  })
+  writeOperators(sheet, organic.concat(tap))
+
+  var done = fetched.reachedEnd || fetched.nextPage > TAP_BACKFILL_MAX_PAGE
+  props.setProperty(TAP_BACKFILL_KEY, String(done ? TAP_BACKFILL_MAX_PAGE + 1 : fetched.nextPage))
+  setStatus(status, '產銷履歷－筆數', String(tap.length))
+  setStatus(
+    status,
+    '產銷履歷－回補進度',
+    done ? '已完成' : '已回補到第 ' + fetched.nextPage + ' 批',
+  )
+  if (fetched.oldest) setStatus(status, '產銷履歷－回補涵蓋起日', fetched.oldest)
+  Logger.log(
+    [
+      '產銷履歷回補：第 ' + startPage + '～' + (fetched.nextPage - 1) + ' 批',
+      '明細最舊日期：' + (fetched.oldest || '（無）'),
+      '業者數：' + before + ' → ' + tap.length,
+      done ? '已完成，不需再執行。' : '尚未抓完，請再執行一次 backfillTapOperators()。',
+    ].join('\n'),
+  )
+}
+
+/**
+ * 產銷履歷採累積合併：抓到的覆蓋同一業者，先前抓過、效期未過的保留。
+ * 來源只給「出貨批次」明細，久未出貨的業者不會出現在最近幾批裡，但證書仍有效。
+ */
+function mergeTapOperators(existing, fresh) {
+  var byId = {}
+  var order = []
+  function put(row) {
+    var id = String(row[6] || row[1]).trim()
+    if (!id) return
+    if (!byId[id]) order.push(id)
+    byId[id] = row
+  }
+  existing.forEach(function (row) {
+    if (String(row[0]).trim() !== '產銷履歷') return
+    if (isExpired(row[5])) return
+    put(row)
+  })
+  fresh.forEach(put)
+  return order
+    .map(function (id) {
+      return byId[id]
+    })
+    .sort(sortByName)
+}
+
+/** 效期（yyyy/MM/dd 字串）已過今天 */
+function isExpired(validDate) {
+  var d = String(validDate || '').trim()
+  if (!d) return false
+  return d < Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy/MM/dd')
 }
 
 /* ───────── 工具 ───────── */
@@ -214,6 +323,10 @@ function fetchJson(url) {
   var text = res.getContentText()
   var data = JSON.parse(text)
   if (!data || typeof data.length !== 'number') throw new Error('回應格式非陣列：' + url)
+  // 來源會用「一筆 errMsg」回報錯誤（例如 $top 超過 10000），不要當成空資料
+  if (data.length === 1 && data[0] && data[0].errMsg) {
+    throw new Error('來源回應：' + data[0].errMsg)
+  }
   return data
 }
 
@@ -254,6 +367,12 @@ function readOperators(sheet) {
 
 function writeOperators(sheet, rows) {
   sheet.getRange(1, 1, 1, OPERATOR_HEADERS.length).setValues([OPERATOR_HEADERS])
+  var extra = sheet.getLastColumn() - OPERATOR_HEADERS.length
+  if (extra > 0) {
+    sheet
+      .getRange(1, OPERATOR_HEADERS.length + 1, Math.max(sheet.getLastRow(), 1), extra)
+      .clearContent()
+  }
   var last = sheet.getLastRow()
   if (last > 1) sheet.getRange(2, 1, last - 1, OPERATOR_HEADERS.length).clearContent()
   if (!rows.length) return

@@ -173,7 +173,6 @@ export const toFarms = (records: SheetRecord[]): Farm[] =>
       icon: (FARM_ICONS as string[]).includes(r['圖示']) ? (r['圖示'] as FarmIconKey) : 'sprout',
     }))
 
-
 /* ───────── 通過驗證業者（開放資料同步） ───────── */
 
 const OPERATOR_TYPES: Record<string, OperatorType> = { 有機: 'organic', 產銷履歷: 'tap' }

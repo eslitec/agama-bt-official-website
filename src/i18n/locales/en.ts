@@ -164,6 +164,7 @@ const en: MessageSchema = {
       lead: 'Operators certified by our company with the status "passed". The list is updated daily from the Ministry of Agriculture open data platform.',
       source: 'Source: Ministry of Agriculture open data platform',
       updatedOne: '{type}: updated {synced} (source data dated {source})',
+      updatedOneLive: '{type}: updated {synced} (source updated in real time)',
       unknown: 'unknown',
       typeLabel: 'Certification',
       cityLabel: 'County / city',
