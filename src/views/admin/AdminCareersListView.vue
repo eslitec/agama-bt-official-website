@@ -58,6 +58,9 @@ const sections = computed(() =>
 /** 與資料下載同樣的理由：篩選時上下移動會和看不到的那一筆交換（見 admin.downloads.sortLocked） */
 const canSort = computed(() => !query.value.trim() && visibility.value === 'all')
 
+/** 搜尋或篩選時清單是空的，要說「沒有符合條件」而不是「這個類型沒有資料」，以免以為資料不見了 */
+const filtering = computed(() => Boolean(query.value.trim()) || visibility.value !== 'all')
+
 /* 排序 */
 const moving = ref(0)
 const moveError = ref('')
@@ -216,7 +219,8 @@ section.admin-list
               )
                 MIcon(name="delete" :size="16")
                 | {{ t('admin.news.delete') }}
-        p.admin-table__empty(v-if="!s.items.length") {{ t('admin.careers.emptyKind') }}
+        p.admin-table__empty(v-if="!s.items.length")
+          | {{ filtering ? t('admin.careers.emptyFiltered') : t('admin.careers.emptyKind') }}
 
   ConfirmDialog(
     :open="!!target"

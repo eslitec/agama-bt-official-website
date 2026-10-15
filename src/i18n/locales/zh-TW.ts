@@ -334,6 +334,7 @@ const zhTW = {
       searchPlaceholder: '輸入標題、地點或說明',
       count: '共 {count} 筆',
       emptyKind: '這個類型目前沒有資料。',
+      emptyFiltered: '這個類型沒有符合條件的項目。',
       newTitle: '新增項目',
       editTitle: '修改項目',
       back: '← 返回人才發展管理',

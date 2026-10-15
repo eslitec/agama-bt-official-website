@@ -346,6 +346,7 @@ const en: MessageSchema = {
       searchPlaceholder: 'Search title, location or description',
       count: '{count} entries',
       emptyKind: 'Nothing in this category yet.',
+      emptyFiltered: 'Nothing in this category matches your filters.',
       newTitle: 'Add entry',
       editTitle: 'Edit entry',
       back: '← Back to Manage Careers',

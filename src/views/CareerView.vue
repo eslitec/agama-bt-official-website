@@ -158,5 +158,13 @@ const isMail = (href: string): boolean => href.startsWith('mailto:')
   line-height: 1.9;
   color: $c-text;
   overflow-wrap: anywhere;
+
+  // 句子中間的信箱與電話要看得出來可以點。這裡只靠顏色不夠：
+  // 主色與內文色的對比只有 1.7:1（低於可辨識連結所需的 3:1），所以加底線。
+  a {
+    color: $c-primary;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }
 </style>
