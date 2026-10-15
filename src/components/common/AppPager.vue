@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { useMediaQuery } from '@vueuse/core'
 import { pageWindow } from '@/utils/pagination'
 
-const props = defineProps<{ total: number }>()
+// label：分頁導覽的無障礙名稱。不給就用最新消息的，避免呼叫端忘了傳而沒有名稱
+const props = withDefaults(defineProps<{ total: number; label?: string }>(), { label: '' })
 const page = defineModel<number>({ required: true })
 const { t } = useI18n()
 
@@ -13,6 +14,7 @@ const isPhone = useMediaQuery('(max-width: 479.98px)')
 const isTablet = useMediaQuery('(max-width: 767.98px)')
 const siblings = computed(() => (isPhone.value ? 0 : isTablet.value ? 1 : 2))
 const tokens = computed(() => pageWindow(page.value, props.total, siblings.value))
+const navLabel = computed(() => props.label || t('news.pagination'))
 
 const go = (n: number): void => {
   if (n >= 1 && n <= props.total && n !== page.value) page.value = n
@@ -20,7 +22,7 @@ const go = (n: number): void => {
 </script>
 
 <template lang="pug">
-nav.pager(:aria-label="t('news.pagination')")
+nav.pager(:aria-label="navLabel")
   button.pager__step(type="button" :disabled="page <= 1" @click="go(page - 1)")
     span(aria-hidden="true") ‹
     span.pager__step-text {{ t('news.prevText') }}

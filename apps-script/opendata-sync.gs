@@ -222,7 +222,7 @@ function fetchTapRange(startPage, pages) {
       '產銷履歷',
       item.name,
       item.city,
-      Object.keys(item.products).slice(0, 8).join('、'),
+      tapProducts(item.products),
       '',
       item.valid,
       id,
@@ -364,7 +364,29 @@ function productsOf(products, crops) {
   var a = String(products || '').trim()
   var b = String(crops || '').trim()
   var text = a && b && a !== b ? a + '（' + b + '）' : a || b
-  return text.replace(/\s+/g, ' ').slice(0, 200)
+  return clipList(text.replace(/\s+/g, ' '), 200)
+}
+
+/**
+ * 太長的品項清單截短。直接 slice 會從品項中間切斷（例如「…敏豆(四季豆)、白」），
+ * 名單頁看起來像資料壞掉，所以截到最後一個完整品項、補上「…」，括號沒關也補回來。
+ */
+function clipList(text, max) {
+  if (text.length <= max) return text
+  var cut = text.slice(0, max)
+  var at = cut.lastIndexOf('、')
+  if (at > max / 2) cut = cut.slice(0, at)
+  cut += '…'
+  var open = (cut.match(/（/g) || []).length
+  var close = (cut.match(/）/g) || []).length
+  if (open > close) cut += '）'
+  return cut
+}
+
+/** 產銷履歷一個業者可能有上百個品項，只列前 8 個，後面以「…」表示還有 */
+function tapProducts(products) {
+  var keys = Object.keys(products)
+  return keys.slice(0, 8).join('、') + (keys.length > 8 ? '…' : '')
 }
 
 function sortByName(a, b) {

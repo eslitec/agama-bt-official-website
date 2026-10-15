@@ -49,31 +49,42 @@ const perPage = computed(() => {
 
 /* ── 篩選 ── */
 const items = computed(() => data.value.items)
-const byType = computed(() =>
-  type.value ? items.value.filter((o) => o.type === type.value) : items.value,
-)
 const matches = (o: CertifiedOperator, q: string): boolean =>
   [o.name, o.city, o.products, o.certNo ?? ''].some((v) => v.toLowerCase().includes(q))
-const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase()
-  return byType.value.filter((o) => (!city.value || o.city === city.value) && (!q || matches(o, q)))
-})
+const keyword = computed(() => query.value.trim().toLowerCase())
+const hitType = (o: CertifiedOperator): boolean => !type.value || o.type === type.value
+const hitCity = (o: CertifiedOperator): boolean => !city.value || o.city === city.value
+const hitQuery = (o: CertifiedOperator): boolean => !keyword.value || matches(o, keyword.value)
+const filtered = computed(() => items.value.filter((o) => hitType(o) && hitCity(o) && hitQuery(o)))
 const pageResult = computed(() => paginate(filtered.value, page.value, perPage.value))
+
+/**
+ * 膠囊上的數字代表「按下去會得到幾筆」，所以各自排除自己這一項篩選、套用其餘條件。
+ * 否則選了縣市之後，類別膠囊仍顯示全站筆數，按下去筆數卻對不上。
+ */
+const forCityFacet = computed(() => items.value.filter((o) => hitType(o) && hitQuery(o)))
+const forTypeFacet = computed(() => items.value.filter((o) => hitCity(o) && hitQuery(o)))
 
 /** 縣市膠囊：依筆數由多到少，預設只顯示前 12 個 */
 const CITY_LIMIT = 12
 const showAllCities = ref(false)
 const cityCounts = computed(() => {
   const counts = new Map<string, number>()
-  for (const o of byType.value) if (o.city) counts.set(o.city, (counts.get(o.city) ?? 0) + 1)
+  for (const o of forCityFacet.value) if (o.city) counts.set(o.city, (counts.get(o.city) ?? 0) + 1)
   return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-Hant'))
 })
-const visibleCities = computed(() =>
-  showAllCities.value ? cityCounts.value : cityCounts.value.slice(0, CITY_LIMIT),
-)
+const visibleCities = computed<[string, number][]>(() => {
+  const list = showAllCities.value ? cityCounts.value : cityCounts.value.slice(0, CITY_LIMIT)
+  // 目前選的縣市一定要留在清單裡（即使搭配關鍵字後是 0 筆），否則使用者沒辦法取消它
+  if (city.value && !list.some(([name]) => name === city.value)) {
+    return [...list, [city.value, cityCounts.value.find(([n]) => n === city.value)?.[1] ?? 0]]
+  }
+  return list
+})
 const typeCounts = computed(() => ({
-  organic: items.value.filter((o) => o.type === 'organic').length,
-  tap: items.value.filter((o) => o.type === 'tap').length,
+  all: forTypeFacet.value.length,
+  organic: forTypeFacet.value.filter((o) => o.type === 'organic').length,
+  tap: forTypeFacet.value.filter((o) => o.type === 'tap').length,
 }))
 
 /* ── 資料更新時間（顯示實際同步成功時間，不是「每日更新」） ── */
@@ -120,7 +131,7 @@ section.operators(v-if="enabled && !empty")
               :class="{ 'is-active': !type }"
               @click="setParam('type', '')"
             ) {{ t('unit.operators.all') }}
-              span.pill__count {{ items.length }}
+              span.pill__count {{ typeCounts.all }}
             button.pill(
               type="button"
               :class="{ 'is-active': type === 'organic' }"
@@ -134,7 +145,7 @@ section.operators(v-if="enabled && !empty")
             ) {{ t('unit.operators.tap') }}
               span.pill__count {{ typeCounts.tap }}
 
-        fieldset.operators__facet(v-if="cityCounts.length")
+        fieldset.operators__facet(v-if="cityCounts.length || city")
           legend.operators__facet-title {{ t('unit.operators.cityLabel') }}
           .operators__pills
             button.pill(
@@ -194,7 +205,12 @@ section.operators(v-if="enabled && !empty")
               dd {{ o.validDate }}
         li.operators__empty(v-if="!filtered.length") {{ t('unit.operators.empty') }}
 
-      AppPager(v-if="pageResult.total > 1" v-model="page" :total="pageResult.total")
+      AppPager(
+        v-if="pageResult.total > 1"
+        v-model="page"
+        :total="pageResult.total"
+        :label="t('unit.operators.pagination')"
+      )
 </template>
 
 <style scoped lang="scss">

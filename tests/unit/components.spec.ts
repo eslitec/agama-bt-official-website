@@ -37,6 +37,16 @@ describe('AppPager', () => {
     const w = mount(AppPager, { props: { modelValue: 11, total: 11 }, global })
     expect(w.findAll('button').at(-1)!.attributes('disabled')).toBeDefined()
   })
+
+  it('沒給 label 時用最新消息的名稱，有給就用自己的（同一個元件被兩種清單共用）', () => {
+    const a = mount(AppPager, { props: { modelValue: 1, total: 3 }, global })
+    expect(a.find('nav').attributes('aria-label')).toBe('消息分頁')
+    const b = mount(AppPager, {
+      props: { modelValue: 1, total: 3, label: '通過驗證業者分頁' },
+      global,
+    })
+    expect(b.find('nav').attributes('aria-label')).toBe('通過驗證業者分頁')
+  })
 })
 
 describe('SearchField', () => {

@@ -122,7 +122,13 @@ const { errors, validate, check } = useFormErrors({
       : null,
   ext: () =>
     isBlank(form.ext) ? t('validation.required', { field: t('admin.downloads.fields.ext') }) : null,
-  href: () => (isHttpUrl(form.href) ? null : t('validation.url')),
+  // 網址是必填：留空要說「請填寫網址」，不要丟格式錯誤讓人以為自己打錯了
+  href: () =>
+    isBlank(form.href)
+      ? t('validation.required', { field: t('admin.downloads.fields.href') })
+      : isHttpUrl(form.href)
+        ? null
+        : t('validation.url'),
 })
 
 const aria = (error: string, id: string) =>

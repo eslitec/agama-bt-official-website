@@ -7,6 +7,8 @@ const en: MessageSchema = {
     company: 'Chengda Agama International Certification Corporation',
     tagline: 'TAF-accredited certification body for organic and traceable agricultural products',
     address: 'No. 15-1, Sec. 2, Zhongzheng S. Rd., Guiren Dist., Tainan City, Taiwan',
+    email: "caicbetter{'@'}gmail.com",
+    phone: '06-3032938',
     values: 'Quality · Dedication · Impartiality · Integrity',
     titleSep: " {'|'} ",
     homeTitle: 'Organic & Traceable Product Certification',
@@ -181,6 +183,7 @@ const en: MessageSchema = {
       count: '{n} operators',
       perPage: '{n} per page',
       perPageLabel: 'Results per page',
+      pagination: 'Certified operator pagination',
       searchLabel: 'Search certified operators',
       searchPlaceholder: 'Operator name, product or certificate number',
       empty: 'No operators match these filters.',
@@ -232,7 +235,7 @@ const en: MessageSchema = {
     go: 'Details ↗',
     empty: 'There are no job openings or training sessions posted at the moment.',
     contact:
-      "To apply or register, email caicbetter{'@'}gmail.com or call 06-3032938, stating the job title or course name in the subject line.",
+      'To apply or register, email {email} or call {phone}, stating the job title or course name in the subject line.',
   },
   login: {
     eyebrow: 'ADMIN LOGIN',

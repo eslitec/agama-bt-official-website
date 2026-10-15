@@ -56,7 +56,12 @@ const isMail = (href: string): boolean => href.startsWith('mailto:')
               | {{ isMail(c.href) ? c.href.replace('mailto:', '') : t('career.go') }}
               span.visually-hidden(v-if="!isMail(c.href)") {{ t('common.externalLink') }}
       //- 聯絡方式放在 AsyncState 內，載入中與載入失敗時不要先冒出來
-      p.career-contact {{ t('career.contact') }}
+      //- 信箱與電話做成連結，手機上才能直接寄信／撥號（與「農場簡介」一致）
+      i18n-t.career-contact(keypath="career.contact" tag="p" scope="global")
+        template(#email)
+          a(:href="`mailto:${t('site.email')}`") {{ t('site.email') }}
+        template(#phone)
+          a(:href="`tel:${t('site.phone').replace(/-/g, '')}`") {{ t('site.phone') }}
 </template>
 
 <style scoped lang="scss">

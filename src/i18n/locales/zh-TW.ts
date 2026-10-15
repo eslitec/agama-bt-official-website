@@ -5,6 +5,8 @@ const zhTW = {
     company: '成大智研國際驗證股份有限公司',
     tagline: '財團法人全國認證基金會（TAF）認證之有機及產銷履歷驗證機構',
     address: '臺南市歸仁區中正南路二段 15 之 1 號',
+    email: "caicbetter{'@'}gmail.com",
+    phone: '06-3032938',
     values: '優質驗證　敬業用心　公正服務　誠信正直',
     titleSep: '｜',
     homeTitle: '有機及產銷履歷驗證機構',
@@ -177,6 +179,7 @@ const zhTW = {
       count: '共 {n} 筆',
       perPage: '每頁 {n} 筆',
       perPageLabel: '每頁顯示筆數',
+      pagination: '通過驗證業者分頁',
       searchLabel: '搜尋通過驗證業者',
       searchPlaceholder: '輸入業者名稱、品項或證書字號',
       empty: '沒有符合條件的業者。',
@@ -223,8 +226,7 @@ const zhTW = {
     period: '期間',
     go: '詳細資訊 ↗',
     empty: '目前沒有公告中的職缺或教育訓練資訊。',
-    contact:
-      "應徵或報名請來信 caicbetter{'@'}gmail.com，或電洽 06-3032938，信件主旨請註明應徵職稱或課程名稱。",
+    contact: '應徵或報名請來信 {email}，或電洽 {phone}，信件主旨請註明應徵職稱或課程名稱。',
   },
   login: {
     eyebrow: 'ADMIN LOGIN',

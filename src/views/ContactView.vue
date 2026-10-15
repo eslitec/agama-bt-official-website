@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PageHeading from '@/components/common/PageHeading.vue'
@@ -121,11 +121,14 @@ async function onSubmit(): Promise<void> {
   }
 }
 
-function reset(): void {
+async function reset(): Promise<void> {
   Object.assign(form, emptyForm())
   clear()
   submitted.value = false
   showSummary.value = false
+  // 表單重新出現後把焦點帶到第一個欄位，鍵盤使用者才不用從頁首重新 Tab 下來
+  await nextTick()
+  document.getElementById(idOf('topic'))?.focus()
 }
 </script>
 
