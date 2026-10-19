@@ -79,7 +79,7 @@ npm run test        # Vitest
 - **資料下載可編輯的欄位**：分類編號、分類名稱（含英文）、檔名（含英文）、格式、檔案連結、是否顯示，並可在同分類內上下調整順序。同一分類中**檔名完全相同**的多列，在公開網站會合併成一份文件、並列出各種格式的下載按鈕。
 - **都不提供檔案上傳**：檔案請先放到雲端硬碟（分享權限設為「知道連結的任何人」），再把連結貼進來。
 - **更新時間**：儲存後立即寫入內容試算表，但公開網站讀的是「發布到網路」的 CSV，Google 有快取，**約 5 分鐘內**才會看到變更（管理者自己的瀏覽器會清掉本機快取，但仍受 Google 快取影響）。
-- **後端**：`apps-script/admin-api.gs`（Google Apps Script 網頁應用程式）。帳號密碼以 salt＋SHA-256 雜湊存在指令碼屬性（不在公開的試算表裡）；登入後取得 8 小時有效的簽章權杖，每個請求都要帶權杖；登入失敗鎖定目前關閉（`admin-api.gs` 的 `MAX_FAILS = 0`，依使用者要求；改回 5 即恢復「連續失敗 5 次鎖 15 分鐘」）；寫入時加鎖避免同時儲存互相覆蓋。
+- **後端**：`apps-script/admin-api.gs`（Google Apps Script 網頁應用程式）。帳號密碼以 salt＋SHA-256 雜湊存在指令碼屬性（不在公開的試算表裡）；登入後取得 8 小時有效的簽章權杖，每個請求都要帶權杖；連續登入失敗 20 次會鎖住該帳號 2 分鐘（`admin-api.gs` 的 `MAX_FAILS` / `LOCK_SECONDS`）；被鎖住時在 Apps Script 編輯器執行 `unlockAccount()` 即可立即解除；寫入時加鎖避免同時儲存互相覆蓋。
 - **前端**：`src/api/modules/admin.ts`（一律以 `Content-Type: text/plain` POST，避免 Apps Script 無法回應的 CORS 預檢）、`src/stores/auth.ts`（權杖；勾選「記住此裝置」存 localStorage，否則存 sessionStorage，權杖到期自動登出）、`src/views/admin/*`。
 - **開發模式**：`npm run dev` 且未設定 `VITE_ADMIN_API_URL` 時使用 `src/api/admin-mock.ts` 模擬後台（帳號 `admin`／密碼 `admin12345`，資料只在記憶體，重新整理後還原），行為與錯誤訊息與正式後台相同。
 

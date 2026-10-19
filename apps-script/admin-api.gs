@@ -14,7 +14,9 @@
  * - 管理者帳密存在「指令碼屬性」（不在試算表裡，試算表已公開發布）。
  * - 密碼以隨機 salt + SHA-256 迭代雜湊儲存，不保存明碼。
  * - 登入成功回傳 HMAC-SHA256 簽章的權杖（8 小時有效），之後每個請求都要帶權杖。
- * - 登入失敗鎖定目前關閉（MAX_FAILS = 0）；要啟用時把 MAX_FAILS 改成 5，連續失敗 5 次會鎖 LOCK_SECONDS 秒。
+ * - 登入失敗 MAX_FAILS 次會鎖住該帳號 LOCK_SECONDS 秒。門檻刻意放寬到 20 次、只鎖 2 分鐘：
+ *   足以擋掉自動化的密碼嘗試，又不會因為自己打錯幾次就被關在門外。
+ *   萬一真的被鎖住，在編輯器執行 unlockAccount() 即可立即解除。
  * - 寫入試算表使用 LockService 避免同時編輯互相覆蓋。
  *
  * 請求格式：POST，Content-Type: text/plain，內容為 JSON { action, token?, ...參數 }
@@ -30,8 +32,8 @@ var CONTACT_TO = 'hoganalin@gmail.com'
 var CONTACT_MAX_PER_10MIN = 10
 var TOKEN_TTL_MS = 8 * 60 * 60 * 1000
 var HASH_ROUNDS = 1000
-var MAX_FAILS = 0 // 0 = 不限制登入失敗次數（使用者要求）
-var LOCK_SECONDS = 15 * 60
+var MAX_FAILS = 20 // 0 = 不限制；20 次內正常人不會誤觸，自動化嘗試會被擋下
+var LOCK_SECONDS = 2 * 60
 var SETUP_TTL_MS = 30 * 60 * 1000
 var MIN_PASSWORD = 10
 
@@ -251,7 +253,8 @@ function login(body) {
   var cache = CacheService.getScriptCache()
   var failKey = 'fail:' + username
   var fails = Number(cache.get(failKey) || 0)
-  if (MAX_FAILS > 0 && fails >= MAX_FAILS) throw apiError('LOCKED', '登入失敗次數過多，請 15 分鐘後再試')
+  if (MAX_FAILS > 0 && fails >= MAX_FAILS)
+    throw apiError('LOCKED', '登入失敗次數過多，請 ' + Math.ceil(LOCK_SECONDS / 60) + ' 分鐘後再試')
   var admin = getAdmins().filter(function (a) { return a.username === username })[0]
   if (!admin || hashPassword(password, admin.salt) !== admin.hash) {
     cache.put(failKey, String(fails + 1), LOCK_SECONDS)
@@ -259,6 +262,24 @@ function login(body) {
   }
   cache.remove(failKey)
   return issueToken(admin.username)
+}
+
+/**
+ * 在編輯器手動執行：解除登入鎖定。
+ * 直接按「執行」會清掉所有管理者的失敗次數；要只解一個帳號就改成 unlockAccount('帳號')。
+ * 只清除失敗計數，不會動到帳號或密碼。
+ */
+function unlockAccount(username) {
+  var cache = CacheService.getScriptCache()
+  var names = username
+    ? [String(username).trim().toLowerCase()]
+    : getAdmins().map(function (a) { return a.username })
+  if (!names.length) {
+    Logger.log('目前沒有任何管理者帳號。')
+    return
+  }
+  names.forEach(function (u) { cache.remove('fail:' + u) })
+  Logger.log('已解除登入鎖定：' + names.join('、') + '，可以立即重新登入。')
 }
 
 function changePassword(username, currentPassword, newPassword) {
