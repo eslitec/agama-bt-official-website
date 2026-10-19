@@ -244,7 +244,6 @@ const en: MessageSchema = {
         slogan: 'Visiting the field to secure quality at source',
       },
     },
-    contact: 'To apply, email {email} or call {phone}, stating the job title in the subject line.',
   },
   login: {
     eyebrow: 'ADMIN LOGIN',

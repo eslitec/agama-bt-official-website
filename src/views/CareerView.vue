@@ -51,13 +51,6 @@ const { t } = useI18n()
           .career-role__text
             p.career-role__name {{ t(`career.roles.${r.key}.name`) }}
             p.career-role__slogan {{ t(`career.roles.${r.key}.slogan`) }}
-
-    //- 信箱與電話做成連結，手機上才能直接寄信／撥號（與「農場簡介」一致）
-    i18n-t.career-contact(keypath="career.contact" tag="p" scope="global")
-      template(#email)
-        a(:href="`mailto:${t('site.email')}`") {{ t('site.email') }}
-      template(#phone)
-        a(:href="`tel:${t('site.phone').replace(/-/g, '')}`") {{ t('site.phone') }}
 </template>
 
 <style scoped lang="scss">
@@ -184,23 +177,6 @@ const { t } = useI18n()
     font-size: 13px;
     line-height: 1.8;
     color: $c-text;
-  }
-}
-
-.career-contact {
-  padding: 16px 18px;
-  background: $c-sand;
-  font-size: 13px;
-  line-height: 1.9;
-  color: $c-text;
-  overflow-wrap: anywhere;
-
-  // 句子中間的信箱與電話要看得出來可以點。這裡只靠顏色不夠：
-  // 主色與內文色的對比只有 1.7:1（低於可辨識連結所需的 3:1），所以加底線。
-  a {
-    color: $c-primary;
-    text-decoration: underline;
-    text-underline-offset: 3px;
   }
 }
 </style>

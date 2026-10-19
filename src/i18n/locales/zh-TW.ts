@@ -229,7 +229,6 @@ const zhTW = {
       admin: { name: '行政管理', slogan: '細心管理，將繁雜程序變簡單' },
       audit: { name: '實地查核', slogan: '現場走訪，確保源頭管理品質' },
     },
-    contact: '應徵請來信 {email}，或電洽 {phone}，信件主旨請註明應徵職稱。',
   },
   login: {
     eyebrow: 'ADMIN LOGIN',
