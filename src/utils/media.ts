@@ -4,6 +4,8 @@ import heroWebm from '@/assets/videos/hero.webm'
 import fieldBanner from '@/assets/images/field-banner.webp'
 import contact from '@/assets/images/contact.webp'
 import about from '@/assets/images/about.webp'
+import careerAdmin from '@/assets/images/career-admin.webp'
+import careerAudit from '@/assets/images/career-audit.webp'
 
 /**
  * 首頁主視覺影片（原片前 6 秒、無音軌），poster 為第一格畫面。
@@ -20,12 +22,15 @@ export const heroVideo = {
  * - fieldBanner：首頁「驗證類別」底圖、管理者登入頁側欄（植物與實驗器材）
  * - contact：首頁聯絡資訊卡（單支試管幼苗）
  * - about：成大智研頁（一排試管幼苗）
+ * - careerAdmin／careerAudit：人才發展頁「成大智研生活」兩張職務照（取自舊站同一組照片）
  * 取得實拍照片後替換 src/assets/images 內同名檔即可。
  */
 export const media = {
   fieldBanner,
   contact,
   about,
+  careerAdmin,
+  careerAudit,
 } as const
 
 /** 外部查詢系統 */

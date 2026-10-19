@@ -163,25 +163,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'admin.downloads.editTitle' },
       },
       {
-        path: 'careers',
-        name: 'adminCareers',
-        component: () => import('@/views/admin/AdminCareersListView.vue'),
-        meta: { title: 'admin.careers.title' },
-      },
-      {
-        path: 'careers/new',
-        name: 'adminCareerNew',
-        component: () => import('@/views/admin/AdminCareerEditView.vue'),
-        meta: { title: 'admin.careers.newTitle' },
-      },
-      {
-        path: 'careers/:id(\\d+)',
-        name: 'adminCareerEdit',
-        component: () => import('@/views/admin/AdminCareerEditView.vue'),
-        props: (route) => ({ id: Number(route.params.id) }),
-        meta: { title: 'admin.careers.editTitle' },
-      },
-      {
         path: 'account',
         name: 'adminAccount',
         component: () => import('@/views/admin/AdminAccountView.vue'),

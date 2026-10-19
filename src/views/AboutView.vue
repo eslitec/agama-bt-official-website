@@ -16,6 +16,7 @@ const values = computed(() => (tm('about.values') as unknown as string[]).map((v
       .about__text
         p.about__para {{ t('about.p1') }}
         p.about__para {{ t('about.p2') }}
+        p.about__para {{ t('about.standards') }}
         section.about__scope
           h2.about__scope-title {{ t('about.scopeTitle') }}
           p.about__scope-body

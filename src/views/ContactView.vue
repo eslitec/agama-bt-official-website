@@ -20,6 +20,12 @@ const { t, tm, rt, locale } = useI18n()
 const route = useRoute()
 const demo = contactApi.isDemoContact()
 
+// 內嵌 Google 地圖：用地址查詢的形式，不需要 API 金鑰，也不會帶入任何使用者資料
+const mapSrc = computed(
+  () =>
+    `https://www.google.com/maps?q=${encodeURIComponent(t('site.address'))}&hl=${locale.value}&output=embed`,
+)
+
 const { data: quickFiles } = useAsyncData(fetchQuickFiles, [])
 const complaintForm = computed(() => quickFiles.value.find((f) => f.name.startsWith('TT-34-01')))
 
@@ -261,6 +267,14 @@ async function reset(): Promise<void> {
         InfoPanel(:title="t('contact.mailTitle')" tone="card")
           address.contact__address.pre-line
             | {{ t('common.mailingBlock', { address: t('site.address'), company: t('site.company') }) }}
+        InfoPanel(:title="t('contact.mapTitle')" tone="card")
+          iframe.contact__map(
+            :src="mapSrc"
+            :title="t('contact.mapTitle')"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen
+          )
 </template>
 
 <style scoped lang="scss">
@@ -283,6 +297,14 @@ async function reset(): Promise<void> {
   &__address {
     font-style: normal;
     font-size: 13px;
+  }
+
+  // 地圖只是輔助，固定一個不搶版面的高度就好
+  &__map {
+    display: block;
+    width: 100%;
+    height: 220px;
+    border: 0;
   }
 }
 

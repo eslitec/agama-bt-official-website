@@ -23,12 +23,6 @@ const tabs = computed(() => [
     active: String(route.name ?? '').startsWith('adminDownload'),
   },
   {
-    key: 'careers',
-    to: { name: 'adminCareers' },
-    label: t('admin.tabCareers'),
-    active: String(route.name ?? '').startsWith('adminCareer'),
-  },
-  {
     key: 'account',
     to: { name: 'adminAccount' },
     label: t('admin.tabAccount'),

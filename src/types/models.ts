@@ -139,38 +139,6 @@ export interface AdminDownloadItem {
 
 export type AdminDownloadInput = Omit<AdminDownloadItem, 'id'>
 
-/** 人才發展：職缺與教育訓練 */
-export type CareerKind = 'job' | 'training'
-
-export interface Career {
-  id: number
-  kind: CareerKind
-  title: string
-  titleEn?: string
-  place?: string
-  nature?: string
-  period?: string
-  body: string
-  bodyEn?: string
-  href?: string
-}
-
-export interface AdminCareerItem {
-  id: number
-  kind: CareerKind
-  title: string
-  titleEn: string
-  place: string
-  nature: string
-  period: string
-  body: string
-  bodyEn: string
-  href: string
-  visible: boolean
-}
-
-export type AdminCareerInput = Omit<AdminCareerItem, 'id'>
-
 /** 列表上下移動的方向 */
 export type MoveDir = 'up' | 'down'
 

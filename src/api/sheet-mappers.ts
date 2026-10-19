@@ -1,6 +1,4 @@
 import type {
-  Career,
-  CareerKind,
   CertifiedOperator,
   DownloadFile,
   DownloadGroup,
@@ -213,29 +211,4 @@ export function toOperatorSync(records: SheetRecord[]): OperatorSync {
     else if (field === '來源資料日期') sync[type].sourceDate = value
   }
   return sync
-}
-
-const CAREER_KINDS: Record<string, CareerKind> = { 職缺: 'job', 教育訓練: 'training' }
-
-/** 「人才發展」工作表 → 職缺與教育訓練（顯示 N 的列不輸出） */
-export function toCareers(records: SheetRecord[]): Career[] {
-  return records.flatMap((r) => {
-    const title = (r['標題'] ?? '').trim()
-    const body = (r['說明'] ?? '').trim()
-    if (!title || !body || !isShown(r)) return []
-    return [
-      {
-        id: Number(r['ID'] ?? 0) || 0,
-        kind: CAREER_KINDS[(r['類型'] ?? '').trim()] ?? 'job',
-        title,
-        ...optional('titleEn', r['標題（英文）']),
-        ...optional('place', r['地點']),
-        ...optional('nature', r['性質']),
-        ...optional('period', r['期間']),
-        body,
-        ...optional('bodyEn', r['說明（英文）']),
-        ...optional('href', r['連結']),
-      },
-    ]
-  })
 }

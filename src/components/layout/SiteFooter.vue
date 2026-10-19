@@ -12,6 +12,8 @@ footer.site-footer
       address.site-footer__text
         | {{ t('site.address') }}
         br
+        a.site-footer__tel(:href="`tel:${t('site.phone').replace(/-/g, '')}`") {{ t('footer.tel') }} {{ t('site.phone') }}
+        br
         | {{ t('site.values') }}
     .site-footer__grid
       nav.site-footer__col(:aria-label="t('footer.certification')")
@@ -81,6 +83,17 @@ footer.site-footer
       @include hover {
         color: $c-white;
       }
+    }
+  }
+
+  // 頁尾電話：深底上主色對比不足，所以沿用內文顏色，靠底線表示可以點
+  &__tel {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    @include focus-ring($c-paper);
+    @include hover {
+      color: $c-white;
     }
   }
 

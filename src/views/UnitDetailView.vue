@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import PageHeading from '@/components/common/PageHeading.vue'
 import MIcon from '@/components/common/MIcon.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -8,10 +9,12 @@ import AsyncState from '@/components/common/AsyncState.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
 import { useLocalized } from '@/composables/useLocalized'
 import { fetchUnits } from '@/api'
+import { applyPageMeta, excerpt } from '@/utils/seo'
 
 const props = defineProps<{ cid: number }>()
 
-const { t, tm, rt } = useI18n()
+const { t, tm, rt, locale } = useI18n()
+const route = useRoute()
 const { pick, langOf } = useLocalized()
 const { data: units, loading, error, reload } = useAsyncData(fetchUnits, [])
 const unit = computed(() => units.value.find((u) => u.cid === props.cid))
@@ -23,6 +26,22 @@ const host = (url: string): string => {
     return url
   }
 }
+
+// 六個驗證類別共用同一個路由，標題要各自帶上類別名稱，
+// 否則瀏覽器分頁、書籤與分享出去的連結六頁都長一樣（最新消息內頁已經這樣做）
+watch(
+  [unit, locale],
+  () => {
+    if (!unit.value) return
+    const name = pick(unit.value.name, unit.value.nameEn)
+    applyPageMeta({
+      title: `${name}${t('site.titleSep')}${t('site.name')}`,
+      description: excerpt(`${name} ${pick(unit.value.desc, unit.value.descEn)}`),
+      path: route.fullPath,
+    })
+  },
+  { flush: 'post', immediate: true },
+)
 </script>
 
 <template lang="pug">

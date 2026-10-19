@@ -3,13 +3,7 @@
  * 行為與 apps-script/admin-api.gs 相同：同樣的 action、回應格式、錯誤代碼與驗證規則。
  * 資料只存在記憶體，重新整理頁面後消息會還原成內建資料。
  */
-import type {
-  AdminAccount,
-  AdminCareerItem,
-  AdminDownloadItem,
-  AdminNewsItem,
-  CareerKind,
-} from '@/types/models'
+import type { AdminAccount, AdminDownloadItem, AdminNewsItem } from '@/types/models'
 import type { AdminErrorCode, AdminRequestBody, AdminResponse } from '@/api/modules/admin'
 import { newsData } from '@/api/data/news.data'
 import { downloadGroupsData } from '@/api/data/downloads.data'
@@ -34,35 +28,6 @@ const seedDownloads = (): AdminDownloadItem[] => {
     ),
   )
 }
-
-const SEED_CAREERS: AdminCareerItem[] = [
-  {
-    id: 1,
-    kind: 'job',
-    title: '驗證稽核員（有機農產品）',
-    titleEn: 'Auditor (organic agricultural products)',
-    place: '臺南市歸仁區',
-    nature: '全職',
-    period: '長期徵才',
-    body: '執行有機農產品驗證之現場稽核與書面審查，撰寫稽核報告。\n需具農業相關科系背景，具稽核經驗者尤佳。',
-    bodyEn: '',
-    href: 'mailto:caicbetter@gmail.com',
-    visible: true,
-  },
-  {
-    id: 2,
-    kind: 'training',
-    title: '驗證人員年度教育訓練',
-    titleEn: 'Annual training for certification personnel',
-    place: '線上課程',
-    nature: '內部訓練',
-    period: '每年第二季',
-    body: '依驗證機構管理辦法規定，驗證人員每年須完成教育訓練時數，內容涵蓋法規更新、稽核技巧與案例研討。',
-    bodyEn: '',
-    href: '',
-    visible: true,
-  },
-]
 
 export const MOCK_ADMIN = { username: 'admin', password: 'admin12345' } as const
 
@@ -92,8 +57,6 @@ export interface AdminMockOptions {
   news?: AdminNewsItem[]
   /** 初始資料下載（預設為內建資料） */
   downloads?: AdminDownloadItem[]
-  /** 初始人才發展（預設為內建範例） */
-  careers?: AdminCareerItem[]
   /** true 時沒有管理者帳號，需要初次設定 */
   needsSetup?: boolean
   /** 初次設定碼 */
@@ -115,7 +78,6 @@ export function createAdminMock(options: AdminMockOptions = {}) {
   const delay = options.delay ?? 0
   let news: AdminNewsItem[] = structuredClone(options.news ?? newsData.map(toAdminNewsItem))
   let downloads: AdminDownloadItem[] = structuredClone(options.downloads ?? seedDownloads())
-  let careers: AdminCareerItem[] = structuredClone(options.careers ?? SEED_CAREERS)
   let admins: MockAdmin[] = options.needsSetup
     ? []
     : [{ ...MOCK_ADMIN, createdAt: '2026-09-01T00:00:00.000Z' }]
@@ -230,31 +192,6 @@ export function createAdminMock(options: AdminMockOptions = {}) {
       name,
       nameEn: clean(item.nameEn, 500),
       ext,
-      href,
-      visible: item.visible !== false,
-    }
-  }
-
-  function validateCareer(input: unknown): Omit<AdminCareerItem, 'id'> {
-    const item = (input ?? {}) as Record<string, unknown>
-    const kind = String(item.kind ?? '')
-    if (kind !== 'job' && kind !== 'training') fail('VALIDATION', '類型只能是職缺或教育訓練')
-    const title = clean(item.title, 200)
-    if (!title) fail('VALIDATION', '請填寫標題')
-    const body = clean(item.body, 4000)
-    if (!body) fail('VALIDATION', '請填寫說明')
-    const href = clean(item.href, 1000)
-    if (href && !/^(https?:\/\/|mailto:)\S+$/.test(href))
-      fail('VALIDATION', '連結需以 http://、https:// 或 mailto: 開頭，且不能有空白')
-    return {
-      kind: kind as CareerKind,
-      title,
-      titleEn: clean(item.titleEn, 300),
-      place: clean(item.place, 100),
-      nature: clean(item.nature, 100),
-      period: clean(item.period, 100),
-      body,
-      bodyEn: clean(item.bodyEn, 6000),
       href,
       visible: item.visible !== false,
     }
@@ -377,32 +314,6 @@ export function createAdminMock(options: AdminMockOptions = {}) {
       case 'moveDownload':
         downloads = moveWithin(downloads, body.id, body.dir, (a, b) => a.n === b.n)
         return { items: downloads }
-      case 'listCareers':
-        return { items: careers }
-      case 'createCareer': {
-        const v = validateCareer(body.item)
-        const id = careers.reduce((max, c) => Math.max(max, c.id), 0) + 1
-        const item = { id, ...v }
-        careers = [...careers, item]
-        return { item }
-      }
-      case 'updateCareer': {
-        const v = validateCareer(body.item)
-        const i = careers.findIndex((c) => c.id === Number(body.id))
-        if (i < 0) fail('NOT_FOUND', '找不到這筆資料，可能已被刪除')
-        const item = { id: Number(body.id), ...v }
-        careers[i] = item
-        return { item }
-      }
-      case 'deleteCareer': {
-        const i = careers.findIndex((c) => c.id === Number(body.id))
-        if (i < 0) fail('NOT_FOUND', '找不到這筆資料，可能已被刪除')
-        careers.splice(i, 1)
-        return { id: Number(body.id) }
-      }
-      case 'moveCareer':
-        careers = moveWithin(careers, body.id, body.dir, (a, b) => a.kind === b.kind)
-        return { items: careers }
       case 'changePassword': {
         const admin = admins.find((a) => a.username === session.u)
         if (!admin || admin.password !== String(body.currentPassword ?? ''))

@@ -2,14 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createAdminMock, MOCK_ADMIN } from '@/api/admin-mock'
 import { unwrap, type AdminRequestBody } from '@/api/modules/admin'
 import { groupAdminDownloads, matchesDownload } from '@/utils/admin-downloads'
-import { toCareers } from '@/api/sheet-mappers'
-import type { SheetRecord } from '@/api/sheet'
-import type {
-  AdminCareerInput,
-  AdminCareerItem,
-  AdminDownloadInput,
-  AdminDownloadItem,
-} from '@/types/models'
+import type { AdminDownloadInput, AdminDownloadItem } from '@/types/models'
 
 function setup(options: Parameters<typeof createAdminMock>[0] = {}) {
   const mock = createAdminMock(options)
@@ -27,20 +20,6 @@ const download = (patch: Partial<AdminDownloadInput> = {}): AdminDownloadInput =
   nameEn: 'Test document 1.0',
   ext: 'pdf',
   href: 'https://example.tw/a.pdf',
-  visible: true,
-  ...patch,
-})
-
-const career = (patch: Partial<AdminCareerInput> = {}): AdminCareerInput => ({
-  kind: 'job',
-  title: '驗證稽核員',
-  titleEn: '',
-  place: '臺南市歸仁區',
-  nature: '全職',
-  period: '長期徵才',
-  body: '執行現場稽核。',
-  bodyEn: '',
-  href: 'mailto:caicbetter@gmail.com',
   visible: true,
   ...patch,
 })
@@ -134,65 +113,6 @@ describe('後台資料下載', () => {
   })
 })
 
-describe('後台人才發展', () => {
-  it('新增、修改、刪除', async () => {
-    const { call, token } = setup({ careers: [] })
-    const t = await token()
-    const { item } = await call<{ item: AdminCareerItem }>({
-      action: 'createCareer',
-      token: t,
-      item: career(),
-    })
-    expect(item).toMatchObject({ id: 1, kind: 'job', title: '驗證稽核員' })
-    const updated = await call<{ item: AdminCareerItem }>({
-      action: 'updateCareer',
-      token: t,
-      id: item.id,
-      item: career({ title: '驗證稽核員（有機）', visible: false }),
-    })
-    expect(updated.item).toMatchObject({ id: 1, title: '驗證稽核員（有機）', visible: false })
-    await call({ action: 'deleteCareer', token: t, id: item.id })
-    expect(await call<{ items: unknown[] }>({ action: 'listCareers', token: t })).toEqual({
-      items: [],
-    })
-  })
-
-  it('類型、標題、說明與連結格式會驗證', async () => {
-    const { call, token } = setup({ careers: [] })
-    const t = await token()
-    for (const patch of [
-      { kind: 'other' as never },
-      { title: '  ' },
-      { body: '' },
-      { href: '成大智研.tw' },
-    ]) {
-      await expect(
-        call({ action: 'createCareer', token: t, item: career(patch) }),
-      ).rejects.toMatchObject({ code: 'VALIDATION' })
-    }
-  })
-
-  it('上下移動只在同類型內交換', async () => {
-    const { call, token } = setup({ careers: [] })
-    const t = await token()
-    for (const c of [
-      career({ title: '職缺 A' }),
-      career({ kind: 'training', title: '訓練 A' }),
-      career({ title: '職缺 B' }),
-    ]) {
-      await call({ action: 'createCareer', token: t, item: c })
-    }
-    const { items } = await call<{ items: AdminCareerItem[] }>({
-      action: 'moveCareer',
-      token: t,
-      id: 3,
-      dir: 'up',
-    })
-    // 中間的「訓練 A」不受影響，兩個職缺對調
-    expect(items.map((c) => c.title)).toEqual(['職缺 B', '訓練 A', '職缺 A'])
-  })
-})
-
 describe('資料下載列表工具', () => {
   const items = [
     {
@@ -242,42 +162,5 @@ describe('資料下載列表工具', () => {
     expect(items.filter((i) => matchesDownload(i, '手冊')).map((i) => i.id)).toEqual([3])
     expect(items.filter((i) => matchesDownload(i, 'doc')).map((i) => i.id)).toEqual([2])
     expect(items.filter((i) => matchesDownload(i, '  ')).length).toBe(3)
-  })
-})
-
-describe('人才發展工作表', () => {
-  it('轉成職缺與教育訓練，顯示 N 與缺標題、說明的列略過', () => {
-    const rows: SheetRecord[] = [
-      {
-        ID: '1',
-        類型: '職缺',
-        標題: '驗證稽核員',
-        '標題（英文）': 'Auditor',
-        地點: '臺南市歸仁區',
-        性質: '全職',
-        期間: '長期徵才',
-        說明: '執行現場稽核。',
-        '說明（英文）': '',
-        連結: 'mailto:caicbetter@gmail.com',
-        顯示: 'Y',
-      },
-      { ID: '2', 類型: '教育訓練', 標題: '年度教育訓練', 說明: '法規更新。', 顯示: '' },
-      { ID: '3', 類型: '職缺', 標題: '下架職缺', 說明: '不應出現。', 顯示: 'N' },
-      { ID: '4', 類型: '職缺', 標題: '', 說明: '沒有標題。', 顯示: 'Y' },
-    ]
-    expect(toCareers(rows)).toEqual([
-      {
-        id: 1,
-        kind: 'job',
-        title: '驗證稽核員',
-        titleEn: 'Auditor',
-        place: '臺南市歸仁區',
-        nature: '全職',
-        period: '長期徵才',
-        body: '執行現場稽核。',
-        href: 'mailto:caicbetter@gmail.com',
-      },
-      { id: 2, kind: 'training', title: '年度教育訓練', body: '法規更新。' },
-    ])
   })
 })

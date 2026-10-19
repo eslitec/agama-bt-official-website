@@ -1,7 +1,5 @@
 import type {
   AdminAccount,
-  AdminCareerInput,
-  AdminCareerItem,
   AdminDownloadInput,
   AdminDownloadItem,
   AdminNewsInput,
@@ -170,29 +168,6 @@ export const moveDownload = (
   id: number,
   dir: MoveDir,
 ): Promise<{ items: AdminDownloadItem[] }> => request('moveDownload', { token, id, dir })
-
-export const listCareers = (token: string): Promise<{ items: AdminCareerItem[] }> =>
-  request('listCareers', { token })
-
-export const createCareer = (
-  token: string,
-  item: AdminCareerInput,
-): Promise<{ item: AdminCareerItem }> => request('createCareer', { token, item })
-
-export const updateCareer = (
-  token: string,
-  id: number,
-  item: AdminCareerInput,
-): Promise<{ item: AdminCareerItem }> => request('updateCareer', { token, id, item })
-
-export const deleteCareer = (token: string, id: number): Promise<{ id: number }> =>
-  request('deleteCareer', { token, id })
-
-export const moveCareer = (
-  token: string,
-  id: number,
-  dir: MoveDir,
-): Promise<{ items: AdminCareerItem[] }> => request('moveCareer', { token, id, dir })
 
 export const changePassword = (
   token: string,
