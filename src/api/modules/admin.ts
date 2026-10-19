@@ -5,7 +5,6 @@ import type {
   AdminNewsInput,
   AdminNewsItem,
   AdminSession,
-  MoveDir,
 } from '@/types/models'
 
 /**
@@ -163,11 +162,12 @@ export const updateDownload = (
 export const deleteDownload = (token: string, id: number): Promise<{ id: number }> =>
   request('deleteDownload', { token, id })
 
-export const moveDownload = (
+/** 把一份文件搬到同分類的任意位置；beforeId 為 null 代表搬到該分類最後面 */
+export const reorderDownload = (
   token: string,
   id: number,
-  dir: MoveDir,
-): Promise<{ items: AdminDownloadItem[] }> => request('moveDownload', { token, id, dir })
+  beforeId: number | null,
+): Promise<{ items: AdminDownloadItem[] }> => request('reorderDownload', { token, id, beforeId })
 
 export const changePassword = (
   token: string,

@@ -8,8 +8,9 @@ import { adminApi } from '@/api'
 import { clearSheetCache } from '@/api/sheet'
 import { useAdminDownloadsStore } from '@/stores/adminDownloads'
 import { takeAdminFlash, useAdminRequest } from '@/composables/useAdmin'
+import { useSortable } from '@/composables/useSortable'
 import { groupAdminDownloads, matchesDownload } from '@/utils/admin-downloads'
-import type { AdminDownloadItem, MoveDir } from '@/types/models'
+import type { AdminDownloadItem } from '@/types/models'
 
 type Visibility = 'all' | 'visible' | 'hidden'
 
@@ -38,7 +39,7 @@ onMounted(load)
 const query = ref('')
 const visibility = ref<Visibility>('all')
 const visibilityOptions: Visibility[] = ['all', 'visible', 'hidden']
-watch([query, visibility], () => (moveError.value = ''))
+watch([query, visibility], () => (sortError.value = ''))
 
 const filtered = computed(() =>
   store.items.filter(
@@ -51,45 +52,75 @@ const filtered = computed(() =>
 const groups = computed(() => groupAdminDownloads(filtered.value))
 
 /**
- * 有搜尋或篩選時不能調整順序：上下移動是和「同分類的前後一筆」交換，
- * 那一筆可能不在目前的篩選結果裡，畫面會完全沒反應，但順序其實已經變了。
+ * 有搜尋或篩選時不能調整順序：被篩掉的項目仍然在同一個分類裡，
+ * 拖曳的結果會和畫面上看到的不一樣。
  */
 const canSort = computed(() => !query.value.trim() && visibility.value === 'all')
 
 /* 排序 */
-const moving = ref(0)
-const moveError = ref('')
+const sortError = ref('')
 /** 剛移動的那一筆：短暫標示，讓使用者看得出來是哪一列動了 */
 const moved = ref(0)
 let movedTimer: ReturnType<typeof setTimeout> | undefined
 
-/** 清單重畫後焦點會掉，接著連按好幾下很難用：把焦點放回同一筆的同一顆按鈕 */
-async function restoreFocus(id: number, dir: MoveDir): Promise<void> {
+const sortable = useSortable({
+  enabled: () => canSort.value && !loading.value,
+  describe: (m) =>
+    m.kind === 'cancelled'
+      ? t('admin.sort.cancelled')
+      : t(`admin.sort.${m.kind}`, { index: m.index, total: m.total }),
+  commit: async (id, beforeId) => {
+    sortError.value = ''
+    try {
+      const { items } = await run((token) => adminApi.reorderDownload(token, id, beforeId))
+      store.setAll(items)
+      clearSheetCache()
+    } catch (e) {
+      sortError.value = messageOf(e)
+      throw e
+    }
+  },
+  settled: (id) => afterSort(id),
+})
+
+const {
+  onPointerDown,
+  onKeydown,
+  orderOf,
+  isGrabbed,
+  isDragging,
+  lineBefore,
+  lineAtEnd,
+  busy: sorting,
+  message: sortMessage,
+} = sortable
+
+/** 清單重畫後焦點會掉：把焦點放回同一筆的控點，才能接著繼續調整 */
+async function afterSort(id: number): Promise<void> {
   await nextTick()
-  const row = document.querySelector(`[data-id="${id}"]`)
-  const btn = row?.querySelectorAll('button')[dir === 'up' ? 0 : 1]
-  if (btn instanceof HTMLButtonElement && !btn.disabled) btn.focus()
+  const grip = document.querySelector(`[data-id="${id}"] .admin-table__grip`)
+  if (grip instanceof HTMLButtonElement) grip.focus()
   moved.value = id
   clearTimeout(movedTimer)
   movedTimer = setTimeout(() => (moved.value = 0), 1600)
 }
 
-async function move(item: AdminDownloadItem, dir: MoveDir): Promise<void> {
-  if (moving.value || !canSort.value) return
-  moving.value = item.id
-  moveError.value = ''
-  try {
-    const { items } = await run((token) => adminApi.moveDownload(token, item.id, dir))
-    store.setAll(items)
-    clearSheetCache()
-    // 先解除 moving，否則按鈕還是 disabled，焦點放不回去
-    moving.value = 0
-    await restoreFocus(item.id, dir)
-  } catch (e) {
-    moveError.value = messageOf(e)
-  } finally {
-    moving.value = 0
+/** 每一列的狀態樣式。pug 樣板不放這種多條件判斷，留在這裡好讀也好改 */
+function rowClass(d: AdminDownloadItem, group: AdminDownloadItem[]): Record<string, boolean> {
+  return {
+    'admin-table__row--off': !d.visible,
+    'is-moved': moved.value === d.id,
+    'is-dragging': isDragging(d.id),
+    'is-grabbed': isGrabbed(d.id),
+    'is-drop-before': lineBefore(d.id),
+    'is-drop-end': lineAtEnd() && d.id === group[group.length - 1]?.id,
   }
+}
+
+/** 鍵盤拿起某一筆時，那一組要照預覽順序重排 */
+function rowsOf(items: AdminDownloadItem[]): AdminDownloadItem[] {
+  const ids = orderOf(items.map((d) => d.id))
+  return ids.map((id) => items.find((d) => d.id === id)).filter((d) => !!d)
 }
 
 /* 刪除 */
@@ -157,8 +188,11 @@ section.admin-list
     | {{ loadError }}
     |
     button.text-link(type="button" @click="load") {{ t('common.retry') }}
-  p.form-alert(v-if="moveError" role="alert") {{ moveError }}
+  p.form-alert(v-if="sortError" role="alert") {{ sortError }}
   p.admin-list__hint(v-if="store.loaded && !canSort && filtered.length") {{ t('admin.downloads.sortLocked') }}
+  p.admin-list__hint(v-else-if="store.loaded && filtered.length") {{ t('admin.sort.hint') }}
+  //- 拖曳與鍵盤移動都只有視覺變化，螢幕閱讀器要靠這裡才知道發生什麼事
+  .visually-hidden(aria-live="assertive") {{ sortMessage }}
 
   .admin-list__summary(aria-live="polite")
     span {{ t('admin.downloads.count', { count: filtered.length }) }}
@@ -170,13 +204,22 @@ section.admin-list
         span.admin-group__n {{ g.n }}
         | {{ g.title }}
       .admin-table
-        ul.admin-table__body
+        ul.admin-table__body(data-sortable)
           li.admin-table__row(
-            v-for="(d, i) in g.items"
+            v-for="d in rowsOf(g.items)"
             :key="d.id"
-            :class="{ 'admin-table__row--off': !d.visible, 'is-moved': moved === d.id }"
+            :class="rowClass(d, g.items)"
             :data-id="d.id"
           )
+            button.admin-table__grip(
+              type="button"
+              :disabled="!canSort || sorting"
+              :aria-label="t('admin.sort.handle', { name: d.name })"
+              :aria-pressed="isGrabbed(d.id)"
+              @pointerdown="onPointerDown($event, d.id)"
+              @keydown="onKeydown($event, d.id)"
+            )
+              MIcon(name="drag_indicator" :size="18")
             span.admin-table__date {{ d.ext }}
             .admin-table__main
               RouterLink.admin-table__title(
@@ -191,20 +234,6 @@ section.admin-list
             span.badge(:class="d.visible ? 'badge--on' : 'badge--off'")
               | {{ d.visible ? t('admin.news.visible') : t('admin.news.hidden') }}
             .admin-table__actions
-              button.btn.btn--outline.btn--sm.btn--icon(
-                type="button"
-                :disabled="!!moving || !canSort || i === 0"
-                :aria-label="t('admin.downloads.moveUp', { name: d.name })"
-                @click="move(d, 'up')"
-              )
-                MIcon(name="arrow_upward" :size="16")
-              button.btn.btn--outline.btn--sm.btn--icon(
-                type="button"
-                :disabled="!!moving || !canSort || i === g.items.length - 1"
-                :aria-label="t('admin.downloads.moveDown', { name: d.name })"
-                @click="move(d, 'down')"
-              )
-                MIcon(name="arrow_downward" :size="16")
               RouterLink.btn.btn--outline.btn--sm(
                 :to="{ name: 'adminDownloadEdit', params: { id: d.id } }"
                 :aria-label="t('admin.downloads.editLabel', { name: d.name })"
@@ -240,9 +269,74 @@ section.admin-list
 </template>
 
 <style scoped lang="scss">
-/* 共用樣式在 src/styles/_admin.scss；此頁第一欄是格式而非日期 */
+/* 共用樣式在 src/styles/_admin.scss；此頁第一欄是拖曳控點，第二欄是格式而非日期 */
 .admin-table__row {
-  grid-template-columns: 56px minmax(0, 1fr) 64px auto;
+  position: relative;
+  grid-template-columns: 30px 56px minmax(0, 1fr) 64px auto;
+
+  // 拖曳中的那一列淡化，讓插入線成為視線焦點
+  &.is-dragging {
+    opacity: 0.4;
+  }
+
+  // 鍵盤拿起：這一列看起來要「浮起來」，因為它會隨上下鍵一起移動
+  &.is-grabbed {
+    z-index: 1;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+    outline: 2px solid $c-primary;
+    outline-offset: -2px;
+  }
+
+  // 放開後會落在哪裡：一條線，不即時重排，避免拖曳時整個清單跳動
+  &.is-drop-before::before,
+  &.is-drop-end::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    left: 0;
+    height: 2px;
+    background: $c-primary;
+  }
+
+  &.is-drop-before::before {
+    top: -1px;
+  }
+
+  &.is-drop-end::after {
+    bottom: -1px;
+  }
+}
+
+/* 拖曳控點：touch-action none 才不會在手機上變成捲動頁面 */
+.admin-table__grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: $c-muted;
+  cursor: grab;
+  touch-action: none;
+  @include focus-ring;
+
+  @include hover {
+    color: $c-ink;
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &[aria-pressed='true'] {
+    color: $c-primary;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.3;
+  }
 }
 
 .admin-table__date {

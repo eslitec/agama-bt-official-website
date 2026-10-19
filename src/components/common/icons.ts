@@ -10,6 +10,7 @@ import check from '@material-symbols/svg-400/rounded/check-fill.svg?raw'
 import close from '@material-symbols/svg-400/rounded/close-fill.svg?raw'
 import deleteIcon from '@material-symbols/svg-400/rounded/delete-fill.svg?raw'
 import description from '@material-symbols/svg-400/rounded/description-fill.svg?raw'
+import dragIndicator from '@material-symbols/svg-400/rounded/drag_indicator-fill.svg?raw'
 import eco from '@material-symbols/svg-400/rounded/eco-fill.svg?raw'
 import edit from '@material-symbols/svg-400/rounded/edit-fill.svg?raw'
 import factCheck from '@material-symbols/svg-400/rounded/fact_check-fill.svg?raw'
@@ -37,6 +38,7 @@ const raw = {
   close,
   delete: deleteIcon,
   description,
+  drag_indicator: dragIndicator,
   eco,
   edit,
   fact_check: factCheck,

@@ -286,6 +286,15 @@ const en: MessageSchema = {
     tabAccount: 'Account',
     signedInAs: 'Signed in as {name}',
     cancel: 'Cancel',
+    sort: {
+      handle: 'Reorder: {name}',
+      hint: 'Drag the handle on the left to reorder within a category. With a keyboard, focus the handle, press Space to pick the row up, move it with the arrow keys, press Space again to drop it, or Esc to cancel.',
+      grabbed:
+        'Picked up. Position {index} of {total}. Use the arrow keys to move, Space to drop, Esc to cancel.',
+      moved: 'Moved to position {index} of {total}.',
+      dropped: 'Dropped at position {index} of {total}.',
+      cancelled: 'Cancelled, the order is unchanged.',
+    },
     errors: {
       network: 'Cannot reach the admin service. Check your connection and try again.',
       generic: 'Something went wrong. Please try again later.',
@@ -316,10 +325,8 @@ const en: MessageSchema = {
         'Once deleted the document disappears from the public site. To hide it temporarily, clear "Show on site" instead.',
       editLabel: 'Edit {name}',
       deleteLabel: 'Delete {name}',
-      moveUp: 'Move {name} up',
-      moveDown: 'Move {name} down',
       sortLocked:
-        'Reordering is disabled while a search or filter is active: moving swaps with the previous or next row in the same category, which may be hidden by the filter. Clear the search and filter to reorder.',
+        'Reordering is disabled while a search or filter is active: rows hidden by the filter are still in the same category, so the result would not match what you see. Clear the search and filter to reorder.',
       formHint:
         'Rows in the same category with an identical file name are merged into one document on the public site, with a download button per format.',
       fields: {

@@ -270,6 +270,14 @@ const zhTW = {
     tabAccount: '帳號設定',
     signedInAs: '登入帳號：{name}',
     cancel: '取消',
+    sort: {
+      handle: '拖曳排序：{name}',
+      hint: '按住左側的拖曳控點可以調整同一分類內的順序。使用鍵盤時，焦點移到控點後按空白鍵拿起，用上下鍵移動，再按一次空白鍵放下，Esc 取消。',
+      grabbed: '已拿起，目前第 {index} 項，共 {total} 項。用上下鍵移動，空白鍵放下，Esc 取消。',
+      moved: '移到第 {index} 項，共 {total} 項。',
+      dropped: '已放下，目前第 {index} 項，共 {total} 項。',
+      cancelled: '已取消，順序沒有改變。',
+    },
     errors: {
       network: '無法連線到後台，請檢查網路後再試。',
       generic: '操作失敗，請稍後再試。',
@@ -299,10 +307,8 @@ const zhTW = {
       deleteBody: '刪除後公開網站就看不到這份文件了。若只是暫時下架，請改用「在網站顯示」。',
       editLabel: '修改 {name}',
       deleteLabel: '刪除 {name}',
-      moveUp: '{name} 往上移',
-      moveDown: '{name} 往下移',
       sortLocked:
-        '搜尋或篩選時不能調整順序（上下移動是和同分類的前後一筆交換，那一筆可能沒顯示出來）。清除搜尋與篩選後即可調整。',
+        '搜尋或篩選時不能調整順序：沒顯示出來的項目也在同一個分類裡，拖曳的結果會和你看到的不一樣。清除搜尋與篩選後即可調整。',
       formHint:
         '同一個分類中「檔名」完全相同的多筆資料，在公開網站會合併成一份文件、並列出各種格式的下載按鈕。',
       fields: {

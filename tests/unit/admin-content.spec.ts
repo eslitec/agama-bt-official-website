@@ -59,24 +59,48 @@ describe('後台資料下載', () => {
     ).rejects.toMatchObject({ code: 'VALIDATION' })
   })
 
-  it('上下移動只在同分類內交換，已在最前面時回傳 VALIDATION', async () => {
+  it('拖曳排序把文件搬到同分類的指定位置，beforeId 為 null 時搬到最後', async () => {
     const { call, token } = setup()
     const t = await token()
     const { items } = await call<{ items: { id: number; n: string }[] }>({
       action: 'listDownloads',
       token: t,
     })
-    const first = items[0]!
-    const second = items.find((d) => d.n === first.n && d.id !== first.id)!
-    const moved = await call<{ items: { id: number }[] }>({
-      action: 'moveDownload',
+    const group = items.filter((d) => d.n === items[0]!.n)
+    const last = group[group.length - 1]!
+
+    // 搬到同分類的第一筆之前
+    const toTop = await call<{ items: { id: number; n: string }[] }>({
+      action: 'reorderDownload',
       token: t,
-      id: second.id,
-      dir: 'up',
+      id: last.id,
+      beforeId: group[0]!.id,
     })
-    expect(moved.items[0]!.id).toBe(second.id)
+    expect(toTop.items.filter((d) => d.n === last.n)[0]!.id).toBe(last.id)
+
+    // beforeId 為 null：搬回該分類最後面，且不會跑到別的分類去
+    const toEnd = await call<{ items: { id: number; n: string }[] }>({
+      action: 'reorderDownload',
+      token: t,
+      id: last.id,
+      beforeId: null,
+    })
+    const after = toEnd.items.filter((d) => d.n === last.n)
+    expect(after[after.length - 1]!.id).toBe(last.id)
+    expect(toEnd.items.map((d) => d.n)).toEqual(items.map((d) => d.n))
+  })
+
+  it('拖曳排序的目標若不在同一分類，回傳 VALIDATION', async () => {
+    const { call, token } = setup()
+    const t = await token()
+    const { items } = await call<{ items: { id: number; n: string }[] }>({
+      action: 'listDownloads',
+      token: t,
+    })
+    const mine = items[0]!
+    const other = items.find((d) => d.n !== mine.n)!
     await expect(
-      call({ action: 'moveDownload', token: t, id: second.id, dir: 'up' }),
+      call({ action: 'reorderDownload', token: t, id: mine.id, beforeId: other.id }),
     ).rejects.toMatchObject({ code: 'VALIDATION' })
   })
 

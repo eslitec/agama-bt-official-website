@@ -197,21 +197,30 @@ export function createAdminMock(options: AdminMockOptions = {}) {
     }
   }
 
-  /** 在同一個群組內與相鄰項目對調（與 admin-api.gs 的 moveRow 行為相同） */
-  function moveWithin<T extends { id: number }>(
+  /** 在同一個群組內搬到任意位置（與 admin-api.gs 的 reorderRow 行為相同） */
+  function reorderWithin<T extends { id: number }>(
     list: T[],
     id: unknown,
-    dir: unknown,
+    beforeId: unknown,
     sameGroup: (a: T, b: T) => boolean,
   ): T[] {
     const i = list.findIndex((v) => v.id === Number(id))
     if (i < 0) fail('NOT_FOUND', '找不到這筆資料，可能已被刪除')
-    const step = dir === 'up' ? -1 : 1
-    let j = i + step
-    while (j >= 0 && j < list.length && !sameGroup(list[i]!, list[j]!)) j += step
-    if (j < 0 || j >= list.length) fail('VALIDATION', '已經在最前面或最後面了')
+    const item = list[i]!
+    // 同組成員在整份清單中的位置，順序即顯示順序
+    const slots = list.map((v, k) => (sameGroup(item, v) ? k : -1)).filter((k) => k >= 0)
+    const from = slots.indexOf(i)
+    const target = beforeId === null || beforeId === undefined ? '' : String(beforeId)
+    let to = slots.length
+    if (target !== '') {
+      to = slots.findIndex((k) => list[k]!.id === Number(target))
+      if (to < 0) fail('VALIDATION', '目標位置不在同一個分類裡')
+    }
+    if (to > from) to -= 1
+    const picked = slots.map((k) => list[k]!)
+    picked.splice(to, 0, picked.splice(from, 1)[0]!)
     const next = [...list]
-    ;[next[i], next[j]] = [next[j]!, next[i]!]
+    slots.forEach((k, n) => (next[k] = picked[n]!))
     return next
   }
 
@@ -311,8 +320,8 @@ export function createAdminMock(options: AdminMockOptions = {}) {
         downloads.splice(i, 1)
         return { id: Number(body.id) }
       }
-      case 'moveDownload':
-        downloads = moveWithin(downloads, body.id, body.dir, (a, b) => a.n === b.n)
+      case 'reorderDownload':
+        downloads = reorderWithin(downloads, body.id, body.beforeId, (a, b) => a.n === b.n)
         return { items: downloads }
       case 'changePassword': {
         const admin = admins.find((a) => a.username === session.u)

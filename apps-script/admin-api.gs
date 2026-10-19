@@ -135,6 +135,8 @@ function handle(body) {
       return ok({ id: withLock(function () { return deleteDownload(body.id, session.u) }) })
     case 'moveDownload':
       return ok({ items: withLock(function () { return moveDownload(body.id, body.dir, session.u) }) })
+    case 'reorderDownload':
+      return ok({ items: withLock(function () { return reorderDownload(body.id, body.beforeId, session.u) }) })
     case 'listCareers':
       return ok({ items: listCareers() })
     case 'createCareer':
@@ -551,6 +553,44 @@ function moveRow(sheet, map, id, dir, sameGroup, toItem) {
     .map(function (r) { return toItem(r, map) })
 }
 
+/**
+ * 把一列搬到同組的任意位置（拖曳排序用）。
+ * beforeId＝要插在哪一筆之前；空值代表移到該組最後。用 ID 而非位置編號指定目標，
+ * 這樣別人同時插入或刪除資料時，不會把這一筆搬到錯的地方。
+ */
+function reorderRow(sheet, map, id, beforeId, sameGroup, toItem) {
+  var rows = readRows(sheet, map)
+  var idx = -1
+  for (var i = 0; i < rows.length; i++) if (Number(rows[i][map.id]) === Number(id)) idx = i
+  if (idx < 0) throw apiError('NOT_FOUND', '找不到這筆資料，可能已被刪除')
+
+  // 同一組的列在工作表中的位置，陣列順序就是目前的顯示順序
+  var slots = []
+  for (var k = 0; k < rows.length; k++) if (sameGroup(rows[idx], rows[k])) slots.push(k)
+  var from = slots.indexOf(idx)
+
+  var to = slots.length
+  var target = beforeId === null || beforeId === undefined ? '' : String(beforeId).trim()
+  if (target !== '') {
+    to = -1
+    for (var s = 0; s < slots.length; s++) if (Number(rows[slots[s]][map.id]) === Number(target)) to = s
+    if (to < 0) throw apiError('VALIDATION', '目標位置不在同一個分類裡')
+  }
+  if (to > from) to-- // 先把自己抽掉，後面的位置會往前一格
+
+  var out = function () {
+    return readRows(sheet, map)
+      .filter(function (r) { return String(r[map.id]).trim() !== '' })
+      .map(function (r) { return toItem(r, map) })
+  }
+  if (to === from) return out()
+
+  var values = slots.map(function (k) { return sheet.getRange(k + 2, 1, 1, map._width).getValues()[0] })
+  values.splice(to, 0, values.splice(from, 1)[0])
+  for (var t = 0; t < slots.length; t++) sheet.getRange(slots[t] + 2, 1, 1, map._width).setValues([values[t]])
+  return out()
+}
+
 /* ───────── 資料下載 ───────── */
 
 function downloadsSheet() { return sheetByGid(DOWNLOADS_GID, '資料下載') }
@@ -660,6 +700,15 @@ function moveDownload(id, dir, user) {
   var map = downloadsMap(sheet)
   console.log('moveDownload', user, id, dir)
   return moveRow(sheet, map, id, dir === 'up' ? 'up' : 'down', function (a, b) {
+    return String(a[map.n]).trim() === String(b[map.n]).trim()
+  }, rowToDownload)
+}
+
+function reorderDownload(id, beforeId, user) {
+  var sheet = downloadsSheet()
+  var map = downloadsMap(sheet)
+  console.log('reorderDownload', user, id, beforeId)
+  return reorderRow(sheet, map, id, beforeId, function (a, b) {
     return String(a[map.n]).trim() === String(b[map.n]).trim()
   }, rowToDownload)
 }
