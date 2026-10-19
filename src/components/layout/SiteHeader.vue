@@ -286,7 +286,7 @@ header.site-header(:class="headerClass")
     }
   }
 
-  // 英文品牌名較長：折成兩行，並省略重複的英文副標
+  // 英文全名較長：折行顯示，並省略重複的英文副標
   &--latin {
     .site-header__brand-name {
       max-width: 240px;
@@ -375,6 +375,12 @@ header.site-header(:class="headerClass")
 
     .site-header__brand-en {
       display: none;
+    }
+
+    // 英文全名在手機上要讓出空間給「選單」按鈕，不然按鈕會被擠到下一列
+    &.site-header--latin .site-header__brand-name {
+      max-width: 205px;
+      font-size: 15px;
     }
   }
 

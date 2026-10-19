@@ -2,7 +2,7 @@ import type { MessageSchema } from './zh-TW'
 
 const en: MessageSchema = {
   site: {
-    name: 'Chengda Agama International Certification',
+    name: 'Chengda Agama International Certification Corporation',
     nameEn: 'CHENGDA AGAMA INTERNATIONAL CERTIFICATION',
     company: 'Chengda Agama International Certification Corporation',
     tagline: 'TAF-accredited certification body for organic and traceable agricultural products',
@@ -93,7 +93,7 @@ const en: MessageSchema = {
   about: {
     eyebrow: 'ABOUT US',
     title: 'About Us',
-    p1: 'Chengda Agama International Certification is a TAF-accredited certification body for organic and traceable agricultural products, guided by the core values of quality certification, dedication, impartial service and integrity.',
+    p1: 'Chengda Agama International Certification Corporation is a TAF-accredited certification body for organic and traceable agricultural products, guided by the core values of quality certification, dedication, impartial service and integrity.',
     p2: 'Through an impartial and rigorous certification process, we ensure reliability and traceability from farm to table, raising the quality, hygiene and safety of agricultural and aquatic products and doing our utmost for food safety.',
     standards:
       'Our certification system is established and operated in accordance with ISO/IEC 17065:2012 and CNS 17065:2013, Conformity assessment — Requirements for bodies certifying products, processes and services.',
