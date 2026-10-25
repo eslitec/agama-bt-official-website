@@ -35,6 +35,21 @@ var TAP_PAGE = 2000 // 產銷履歷單批筆數（來源 $top 上限 10000，但
 var TAP_MAX_PAGES = 3 // 每日同步往回取幾批（淺層分頁，約一分鐘內跑完）
 var TAP_BACKFILL_PAGES = 3 // backfillTapOperators() 每次再往回加抓幾批
 var TAP_BACKFILL_MAX_PAGE = 24 // 回補最深到第幾批（約 50000 筆明細）
+/**
+ * 來源偶爾會中斷 Apps Script 的連線（UrlFetchApp 丟 "Address unavailable"），
+ * 同一個網址用瀏覽器打卻是正常的。這種是暫時性的，等一下重試通常就過，
+ * 所以不要讓單次失敗毀掉整天的同步。
+ */
+var FETCH_RETRIES = 3
+var FETCH_BACKOFF_MS = [2000, 5000, 12000]
+
+/**
+ * 農業部開放資料平臺的 API 金鑰，存在指令碼屬性（專案設定 → 指令碼屬性）。
+ * 到 https://data.moa.gov.tw/register.aspx 註冊後取得。沒有也能用，只是每日查詢
+ * 上限較低、比較容易被限流。填了就會自動帶進每一次請求。
+ */
+var API_KEY_PROP = 'MOA_API_KEY'
+
 var TAP_BACKFILL_KEY = 'TAP_BACKFILL_NEXT_PAGE'
 var TAP_BACKFILL_FN = 'backfillTapOperators'
 
@@ -338,18 +353,52 @@ function isExpired(validDate) {
 
 /* ───────── 工具 ───────── */
 
-function fetchJson(url) {
-  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true })
-  var code = res.getResponseCode()
-  if (code !== 200) throw new Error('HTTP ' + code + '：' + url)
-  var text = res.getContentText()
-  var data = JSON.parse(text)
-  if (!data || typeof data.length !== 'number') throw new Error('回應格式非陣列：' + url)
-  // 來源會用「一筆 errMsg」回報錯誤（例如 $top 超過 10000），不要當成空資料
-  if (data.length === 1 && data[0] && data[0].errMsg) {
-    throw new Error('來源回應：' + data[0].errMsg)
+/** 指令碼屬性有金鑰就帶上；沒有就維持匿名呼叫。網址都已經有 ?$top=，所以用 & 接 */
+function apiKeyParam() {
+  var key = ''
+  try {
+    key = PropertiesService.getScriptProperties().getProperty(API_KEY_PROP) || ''
+  } catch (e) {
+    key = ''
   }
-  return data
+  key = String(key).trim()
+  return key ? '&api_key=' + encodeURIComponent(key) : ''
+}
+
+/** 連線層與對方暫時性的狀況才值得重試；請求本身有問題重試幾次都一樣 */
+function isRetryable(err) {
+  var m = String((err && err.message) || err)
+  return /Address unavailable|Timeout|timed out|timeout|DNS|refused|reset|HTTP 429|HTTP 5\d\d|too many/i.test(m)
+}
+
+function fetchJson(url) {
+  var full = url + apiKeyParam()
+  var lastErr = null
+  for (var attempt = 0; attempt <= FETCH_RETRIES; attempt++) {
+    if (attempt > 0) Utilities.sleep(FETCH_BACKOFF_MS[attempt - 1] || 12000)
+    try {
+      var res = UrlFetchApp.fetch(full, { muteHttpExceptions: true, followRedirects: true })
+      var code = res.getResponseCode()
+      // 429 與 5xx 是對方忙不過來，值得重試；其他非 200 是請求本身的問題
+      if (code === 429 || code >= 500) throw new Error('HTTP ' + code)
+      if (code !== 200) throw new Error('HTTP ' + code + '：' + url)
+      var data = JSON.parse(res.getContentText())
+      if (!data || typeof data.length !== 'number') throw new Error('回應格式非陣列：' + url)
+      // 來源會用「一筆 errMsg」回報錯誤（例如 $top 超過 10000），不要當成空資料
+      if (data.length === 1 && data[0] && data[0].errMsg) {
+        throw new Error('來源回應：' + data[0].errMsg)
+      }
+      if (attempt > 0) console.log('重試第 ' + attempt + ' 次成功：' + url)
+      return data
+    } catch (err) {
+      lastErr = err
+      if (!isRetryable(err)) throw err
+      console.warn('第 ' + (attempt + 1) + ' 次嘗試失敗：' + (err && err.message))
+    }
+  }
+  throw new Error(
+    '連線失敗，已重試 ' + FETCH_RETRIES + ' 次：' + (lastErr && lastErr.message) + '（' + url + '）',
+  )
 }
 
 /** 從地址取出縣市（例：臺南市歸仁區… → 臺南市） */
